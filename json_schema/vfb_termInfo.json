@@ -1,0 +1,283 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "VFB Term Information metadata schema.",
+  "description": "A JSON schema for use in the VFB API and as a web-facing intermediate layer between VFB neo4j/OWL endpoints and the web.",
+  "name": "vfb_terminfo",
+  "definitions": {
+    "minimal_entity_info": {
+      "type": "object",
+      "required": ["short_form", "iri", "label", "types"],
+      "properties": {
+        "short_form": {
+          "type": "string"
+        },
+        "iri": {
+          "type": "string"
+        },
+        "label": {
+          "description": "rdfs:label",
+          "type": "string"
+        },
+        "types": {
+          "description": "A list of term types, corresponding to neo4j:labels in the VFB production database and to the gross typing system used by VFB: Geppetto.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "term": {
+      "additionalProperties": false,
+      "required": [
+        "core"
+      ],
+      "type": "object",
+      "properties": {
+        "core": {
+          "type": "object",
+          "$ref": {
+            "$ref": "#/definitions/minimal_entity_info"
+          }
+        },
+        "description": {
+          "description": "A string describing or defining an entity.",
+          "type": "string"
+        },
+        "comment": {
+          "description": "rdfs:comment",
+          "type": "string"
+        }
+      }
+    },
+    "rel" : {
+      "type": "object",
+      "properties": {
+        "relation": {
+          "type": "string"
+        },
+        "object": {
+          "type": "object",
+          "$ref": "#/definitions/minimal_entity_info"
+        }
+      }
+    },
+    "image": {
+      "additionalProperties": false,
+      "required": ["short_form", "label", "template"],
+      "type": "object",
+      "properties": {
+        "short_form": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "template": {
+          "type": "string"
+        },
+        "folder": {
+          "type": "string"
+        },
+        "index": {
+          "type": "integer"
+        }
+      }
+    },
+    "xref": {
+      "additionalProperties": false,
+      "required": ["url", "label"],
+      "type": "object",
+      "properties": {
+        "link": {
+          "description": "A URL linking to some third party site.",
+          "type": "string"
+          },
+        "link_text": {
+          "description": "The label string to use for the link.",
+          "type": "string"
+          },
+        "icon": {
+          "description": "A link to an icon to display for the third party site.",
+          "type": "string"
+          }
+        },
+        "site": {
+          "description": "Minimal information about at third party site",
+          "type": "object",
+          "$ref": { "$ref" : "#/definitions/minimal_entity_info"}
+        }
+      },
+    "dataset": {
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "core"
+      ],
+      "properties": {
+        "core": {
+          "type": "object",
+          "$ref": { "$ref" : "#/definitions/minimal_entity_info"}
+        },
+        "url": {
+          "description": "A URL linking to some third party site.",
+          "type": "string"
+        },
+        "icon": {
+          "description": "A link to an icon to display for the third party site.",
+          "type": "string"
+        }
+      }
+    },
+    "license": {
+      "schema_comment": "re-use core?",
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "core"
+      ],
+      "properties": {
+        "core": {
+          "type": "object",
+          "$ref": { "$ref" : "#/definitions/minimal_entity_info"}
+        },
+        "url": {
+          "description": "A URL linking to a license.",
+          "type": "string"
+        },
+        "icon": {
+          "description": "A link to an icon to display for the license.",
+          "type": "string"
+        },
+        "license_text": {
+          "description": "Text of the license - to be used for bespoke licenses only",
+          "type": "string"
+        },
+        "is_bespoke": {
+          "type": "boolean"
+        }
+      }
+
+    },
+    "dataset_license": {
+      "additionalProperties": false,
+      "required": ["dataset", "license"],
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "properties": {
+            "dataset": { "$ref" : "#/definitions/dataset" },
+            "license": { "$ref" : "#/definitions/license" }
+          }
+        }
+      }
+    },
+    "pub": {
+      "additionalProperties": false,
+      "required": ["label"],
+      "schema_comment": "Better to model links as xrefs?",
+      "type": "object",
+      "properties": {
+        "core": {
+          "type": "object",
+          "$ref": {
+            "$ref": "#/definitions/minimal_entity_info"
+          }
+        },
+        "microref": {
+          "description": "A minimal reference text for use in display where space is limited. For single authors: Ghysen, 1998; For multiple authors Ghysen et al., 1986",
+          "type": "string"
+        },
+        "PubMed": {
+          "type": "integer"
+        },
+        "FlyBase": {
+          "type": "string"
+        },
+        "DOI": {
+          "type": "string"
+        },
+        "ISBN": {
+          "type": "string"
+        }
+      }
+    },
+    "synonym": {
+      "additionalProperties": false,
+      "required": [
+        "label"
+      ],
+      "type": "object",
+      "properties": {
+        "label": {
+          "description": "label string",
+          "type": "string"
+        },
+        "scope": {
+          "description": "OBO-style synonym scoping.",
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "pub_syn": {
+        "type": "object",
+        "additional_properties": false,
+        "required": [
+          "relation",
+          "synonym",
+          "pub"
+        ],
+        "properties": {
+          "relation": {
+            "type": "string"
+          },
+          "synonym": {
+            "type": "object",
+            "$ref": "#/definitions/synonym"
+          },
+          "pub": {
+            "type": "object",
+            "$ref": "#/definitions/pub"
+          }
+        }
+      }
+  },
+  "additionalProperties": false,
+  "required": ["term"],
+  "type": "object",
+  "properties" : {
+    "term": { "$ref": "#/definitions/term" },
+    "images" : {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/image" }
+    },
+    "xrefs" : {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/xref" }
+    },
+    "pub_syn" : {
+      "type": "array",
+      "items" : { "$ref": "#/definitions/pub_syn" }
+    },
+    "dataset_license" : {
+      "type": "array",
+      "items" : { "$ref": "#/definitions/dataset_license" }
+    },
+    "rels": {
+      "type": "array",
+      "items" : { "$ref": "#/definitions/rel" }
+    },
+    "parents": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/minimal_entity_info"
+      }
+    }
+  }
+}
+
