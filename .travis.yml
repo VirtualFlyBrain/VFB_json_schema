@@ -5,5 +5,5 @@ install:
   - pip install -r requirements.txt
 script:
   - git clone git@github.com:VirtualFlyBrain/VFB_neo4j.git
-  - export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:VFB_neo4j/src/
+  - export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
   - python src/test/query_roller_tests.py
