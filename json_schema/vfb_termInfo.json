@@ -6,7 +6,12 @@
   "definitions": {
     "minimal_entity_info": {
       "type": "object",
-      "required": ["short_form", "iri", "label", "types"],
+      "required": [
+        "short_form",
+        "iri",
+        "label",
+        "types"
+      ],
       "properties": {
         "short_form": {
           "type": "string"
@@ -36,27 +41,27 @@
       "properties": {
         "core": {
           "type": "object",
-          "$ref": {
-            "$ref": "#/definitions/minimal_entity_info"
-          }
+          "$ref": "#/definitions/minimal_entity_info"
         },
         "description": {
-          "description": "A string describing or defining an entity.",
-          "type": "string"
+          "description": "A string describing or defining an entity. This field is an array, allowing for multiple descriptions, but only one is typically expected.",
+          "type": "array",
+          "items": { "type": "string" }
         },
         "comment": {
-          "description": "rdfs:comment",
-          "type": "string"
+          "description": "rdfs:comment.  This field is an array, allowing for multiple descriptions, but only one is typically expected.",
+          "type": "array",
+          "items": { "type": "string" }
         }
       }
     },
     "rel" : {
       "type": "object",
-      "properties": {
-        "relation": {
+        "properties": {
+          "relation": {
           "type": "string"
-        },
-        "object": {
+          },
+          "object": {
           "type": "object",
           "$ref": "#/definitions/minimal_entity_info"
         }
@@ -64,15 +69,9 @@
     },
     "image": {
       "additionalProperties": false,
-      "required": ["short_form", "label", "template"],
+      "required": ["folder", "template"],
       "type": "object",
       "properties": {
-        "short_form": {
-          "type": "string"
-        },
-        "label": {
-          "type": "string"
-        },
         "template": {
           "type": "string"
         },
@@ -84,30 +83,43 @@
         }
       }
     },
+    "images": {
+      "additionalProperties": false,
+      "required": ["anatomy", "image"],
+      "type": "object",
+      "properties": {
+        "anatomy": {
+          "$ref": "#/definitions/minimal_entity_info"
+        },
+        "image": {
+          "$ref": "#/definitions/image"
+        }
+      }
+    },
     "xref": {
       "additionalProperties": false,
-      "required": ["url", "label"],
+      "required": ["link", "link_text", "site"],
       "type": "object",
       "properties": {
         "link": {
           "description": "A URL linking to some third party site.",
           "type": "string"
-          },
+        },
         "link_text": {
           "description": "The label string to use for the link.",
           "type": "string"
-          },
+        },
         "icon": {
           "description": "A link to an icon to display for the third party site.",
           "type": "string"
-          }
         },
         "site": {
           "description": "Minimal information about at third party site",
           "type": "object",
-          "$ref": { "$ref" : "#/definitions/minimal_entity_info"}
+          "$ref": "#/definitions/minimal_entity_info"
         }
-      },
+      }
+    },
     "dataset": {
       "additionalProperties": false,
       "type": "object",
@@ -117,7 +129,7 @@
       "properties": {
         "core": {
           "type": "object",
-          "$ref": { "$ref" : "#/definitions/minimal_entity_info"}
+          "$ref": "#/definitions/minimal_entity_info"
         },
         "url": {
           "description": "A URL linking to some third party site.",
@@ -139,7 +151,7 @@
       "properties": {
         "core": {
           "type": "object",
-          "$ref": { "$ref" : "#/definitions/minimal_entity_info"}
+          "$ref" : "#/definitions/minimal_entity_info"
         },
         "url": {
           "description": "A URL linking to a license.",
@@ -157,7 +169,6 @@
           "type": "boolean"
         }
       }
-
     },
     "dataset_license": {
       "additionalProperties": false,
@@ -180,8 +191,7 @@
       "properties": {
         "core": {
           "type": "object",
-          "$ref": {
-            "$ref": "#/definitions/minimal_entity_info"
+          "$ref": "#/definitions/minimal_entity_info"
           }
         },
         "microref": {
@@ -200,8 +210,7 @@
         "ISBN": {
           "type": "string"
         }
-      }
-    },
+      },
     "synonym": {
       "additionalProperties": false,
       "required": [
@@ -223,27 +232,27 @@
       }
     },
     "pub_syn": {
-        "type": "object",
-        "additional_properties": false,
-        "required": [
-          "relation",
-          "synonym",
-          "pub"
-        ],
-        "properties": {
-          "relation": {
-            "type": "string"
-          },
-          "synonym": {
-            "type": "object",
-            "$ref": "#/definitions/synonym"
-          },
-          "pub": {
-            "type": "object",
-            "$ref": "#/definitions/pub"
-          }
+      "type": "object",
+      "additional_properties": false,
+      "required": [
+        "relation",
+        "synonym",
+        "pub"
+      ],
+      "properties": {
+        "relation": {
+          "type": "string"
+        },
+        "synonym": {
+          "type": "object",
+          "$ref": "#/definitions/synonym"
+        },
+        "pub": {
+          "type": "object",
+          "$ref": "#/definitions/pub"
         }
       }
+    }
   },
   "additionalProperties": false,
   "required": ["term"],
@@ -253,7 +262,7 @@
     "images" : {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/image" }
+        "$ref": "#/definitions/images" }
     },
     "xrefs" : {
       "type": "array",
@@ -280,4 +289,5 @@
     }
   }
 }
+
 

@@ -4,6 +4,10 @@ from collections import namedtuple
 opm = namedtuple("opm", ["MATCH", "var", "RETURN", "LIMIT"])
 
 
+
+
+
+
 class QueryGenerator(object):
 
     def __init__(self):
@@ -23,7 +27,7 @@ class QueryGenerator(object):
         self.xrefs = opm(
             MATCH="OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-(primary) ",
             RETURN="COLLECT({ link: s.link_base + dbx.accession, link_text: s.label, " \
-                   "site: %s }) AS xrefs" % self.roll_core("s"),
+                   "site: %s, icon: coalesce(s.link_icon_url, '') }) AS xrefs" % self.roll_core("s"),
             var="xrefs",
             LIMIT = False)
 
@@ -39,13 +43,13 @@ class QueryGenerator(object):
                  "(:Individual)-[irw:in_register_with]->(template:Individual)-[:depicts]->" \
                  "(template_anat:Individual) "
 
-        image_return = "{ template: template.label, folder: irw.folder, index: irw.index }"
+        image_return = "{ template: template.label, folder: irw.folder, index: coalesce(irw.index, 0) }"
 
         self.image = opm(
-            MATCH = image_match,
-            RETURN = image_return + " AS image",
-            var = "image",
-            LIMIT = False
+            MATCH=image_match,
+            RETURN=image_return + " AS image",
+            var="image",
+            LIMIT=False
         )
 
         self.images = opm(
@@ -54,27 +58,27 @@ class QueryGenerator(object):
             var = "images",
             LIMIT = "WITH template, irw, i, %s limit 5")  # Not keen on this hidden sub...
 
-        self.term = "{ core: %s, description: primary.description, comment: primary.`annotation-comment`} as term " % (
+        self.term = "{ core: %s, description: primary.description, comment: coalesce(primary.`annotation-comment`, [])} as term " % (
         self.roll_core("primary"))
         return
 
 
     def roll_core(self, var):
         return "{ short_form: %s.short_form, label: %s.label, " \
-                "iri: %s.iri, labels: labels(%s) } " % (var, var, var, var)
+                "iri: %s.iri, types: labels(%s) } " % (var, var, var, var)
 
-    def roll_query(self, type, clauses, pretty_print=False):
+    def roll_query(self, type, clauses, short_form, pretty_print=False):
 
         """Takes a type (cypher label string, delimited by ':'
         and a list of clauses (opm objects) and returns a cypher query.
         """
         var_stack = []
-        primary_query = "MATCH (primary:%s {short_form: '%s' }) " % (type, "FBbt_00000591")
 
-        def roll_clause(q, primary = "primary"):
+        primary_query = "MATCH (primary:%s {short_form: '%s' }) " % (type, short_form)
+
+        def roll_clause(q, primary="primary"):
             v = list(var_stack)
             v.append(primary)
-            v.append(q.RETURN)  # Return statement should be part of WITH CLAUSE
             vars_string = ", ".join(v)
             delim = " "
             out_list = []
@@ -84,8 +88,8 @@ class QueryGenerator(object):
             out_list.append(q.MATCH)
             if q.LIMIT:
                 out_list.append(q.LIMIT % vars_string)
-            out_list.append("WITH " + vars_string)
-            out = delim.join(out_list)
+            out_list.append("WITH " + q.RETURN + ", " + vars_string)
+            out = delim.join(out_list) + delim
             if q.var:
                 var_stack.append(q.var)
             return out
@@ -95,22 +99,27 @@ class QueryGenerator(object):
         for c in clauses:
             q += roll_clause(c)
 
-        return q + "RETURN " + self.term + "," +  ",".join(var_stack)
+        out = q + "RETURN " + self.term
+        if var_stack:
+            out += "," + ",".join(var_stack)
+        return out
 
-    def anatomical_ind_query(self, pretty_print=False):
+    def anatomical_ind_query(self, short_form, pretty_print=False):
         return self.roll_query(type='Individual:Anatomy',
+                               short_form=short_form,
                                clauses=[self.xrefs],
                                pretty_print=pretty_print) # Is Anatomy label sufficient here
 
-    def class_query(self, pretty_print=False):
+    def class_query(self, short_form, pretty_print=False):
         return self.roll_query(type='Class:Anatomy',
+                               short_form = short_form,
                                clauses=[self.xrefs,
-                                        self.pub_syn,
                                         self.images],
                                pretty_print=pretty_print)
 
-    def data_set_query(self, pretty_print=False):
+    def data_set_query(self, short_form, pretty_print=False):
         return self.roll_query(type='Dataset',
+                               short_form=short_form,
                                clauses=[self.xrefs],
                                pretty_print=pretty_print)
 

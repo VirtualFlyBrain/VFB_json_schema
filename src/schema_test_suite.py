@@ -10,8 +10,10 @@ def get_json_from_file(filename, warn = False):
     """Loads json from a file.
     Optionally specify warn = True to warn, rather than
     fail if file not found."""
-    f = open(filename, 'r') 
-    return json.loads(f.read())
+    f = open(filename, 'r')
+    fc = f.read()
+    f.close()
+    return json.loads(fc)
 
 
 def get_validator(filename, base_uri = ''):
@@ -27,7 +29,7 @@ def get_validator(filename, base_uri = ''):
     try:
         # Check schema via class method call. Works, despite IDE complaining
         Draft4Validator.check_schema(schema)
-        print("Schema %s is valid JSON" % filename)
+        print("%s is a valid JSON schema" % filename)
     except SchemaError:
         raise
     if base_uri:
@@ -57,7 +59,7 @@ def recurse_through_errors(es, level = 0):
     # Assuming blank context is a sufficient escape clause here.
     for e in es:
         warnings.warn(
-            "***"*level + "subschema level " + str(level) + "\t".join([e.message,
+            "***"*level + " subschema level " + str(level) + "\t".join([e.message,
             "Path to error:" + str(e.absolute_schema_path)]) + "\n")
         if e.context:
             level += 1
