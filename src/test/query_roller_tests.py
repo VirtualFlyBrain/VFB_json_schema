@@ -26,25 +26,70 @@ class QueryRollerTest(unittest.TestCase):
         self.qw = test_wrapper()
 
 
-    def test_class_pimary(self):
-        query = self.qg.roll_query(type="Class",
+    def test_class_term(self):
+        query = self.qg.roll_query(types=["Class"],
                                    clauses=[],
                                    short_form='FBbt_00007422')
         r = self.qw.test(query)
         self.assertTrue(r, "Simple class query returns no results.")
 
+    def test_individual_term(self):
+        query = self.qg.roll_query(types=["Individual"],
+                                   clauses=[],
+                                   short_form='VFB_00011179')
+        r = self.qw.test(query)
+        self.assertTrue(r, "Simple class query returns no results.")
 
-    def test_images(self):
-        query = self.qg.roll_query(type="Class",
+
+    def test_class_images(self):
+        query = self.qg.roll_query(types=["Class"],
                                    clauses=[self.qg.images],
                                    short_form='FBbt_00007422')
         r = self.qw.test(query)
         self.assertTrue(r)
 
-    def test_xrefs(self):
-        query = self.qg.roll_query(type="Class",
+    def test_class_xrefs(self):
+        query = self.qg.roll_query(types=["Class"],
                                    clauses=[self.qg.xrefs],
                                    short_form='FBbt_00007422')
+        r = self.qw.test(query)
+        self.assertTrue(r)
+
+
+    def test_class_parents(self):
+        query = self.qg.roll_query(types=["Class"],
+                                   clauses=[self.qg.parents],
+                                   short_form='FBbt_00007422')
+        r = self.qw.test(query)
+        self.assertTrue(r)
+
+    def test_class_relationships(self):
+        query = self.qg.roll_query(types=["Class"],
+                                   clauses=[self.qg.relationships],
+                                   short_form='FBbt_00007422')
+        r = self.qw.test(query)
+        self.assertTrue(r)
+
+
+    def test_individual_relationships(self):
+        query = self.qg.roll_query(types=["Individual"],
+                                   clauses=[self.qg.relationships],
+                                   short_form='VFB_00011179')
+        r = self.qw.test(query)
+        self.assertTrue(r)
+
+
+    def test_individual_parents(self):
+        query = self.qg.roll_query(types=["Individual"],
+                                   clauses=[self.qg.relationships],
+                                   short_form='VFB_00011179')
+        r = self.qw.test(query)
+        self.assertTrue(r)
+
+    def test_individual_image(self):
+        query = self.qg.roll_query(types=["Individual"],
+                                   clauses=[self.qg.image],
+                                   short_form='VFB_00011179')
         r = self.qw.test(query)
         self.assertTrue(r)
 
@@ -52,6 +97,14 @@ class QueryRollerTest(unittest.TestCase):
         query = self.qg.class_query(short_form='FBbt_00007422')
         r = self.qw.test(query)
         self.assertTrue(r)
+
+
+    def test_individual(self):
+        query = self.qg.anatomical_ind_query(short_form='VFB_00011179')
+        r = self.qw.test(query)
+        self.assertTrue(r)
+
+
 
     def tearDown(self):
         return

@@ -32,6 +32,30 @@
         }
       }
     },
+    "minimal_edge_info": {
+      "type": "object",
+      "required": [
+        "iri",
+        "label",
+        "type"
+      ],
+      "properties": {
+        "short_form": {
+          "type": "string"
+        },
+        "iri": {
+          "type": "string"
+        },
+        "label": {
+          "description": "rdfs:label",
+          "type": "string"
+        },
+        "type": {
+          "description": "Neo4J edge type",
+          "type": "string"
+        }
+      }
+    },
     "term": {
       "additionalProperties": false,
       "required": [
@@ -57,11 +81,14 @@
     },
     "rel" : {
       "type": "object",
-        "properties": {
-          "relation": {
-          "type": "string"
-          },
-          "object": {
+      "additionalProperties": false,
+      "Required": ["relation", "object"],
+      "properties": {
+        "relation": {
+          "type": "object",
+          "$ref": "#/definitions/minimal_edge_info"
+        },
+        "object": {
           "type": "object",
           "$ref": "#/definitions/minimal_entity_info"
         }
@@ -277,7 +304,7 @@
       "type": "array",
       "items" : { "$ref": "#/definitions/dataset_license" }
     },
-    "rels": {
+    "relationships": {
       "type": "array",
       "items" : { "$ref": "#/definitions/rel" }
     },
@@ -286,7 +313,8 @@
       "items": {
         "$ref": "#/definitions/minimal_entity_info"
       }
-    }
+    },
+    "image": { "$ref": "#/definitions/image" }
   }
 }
 
