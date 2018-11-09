@@ -9,6 +9,7 @@ class test_wrapper():
         self.V = get_validator("../../json_schema/vfb_termInfo.json")
         self.nc = neo4j_connect('http://pdb.virtualflybrain.org', 'neo4j', 'neo4j')
 
+
     def test(self, t, query, single=True, print_result=True):
 
         """Runs Cypher query.
@@ -37,6 +38,8 @@ class QueryRollerTest(unittest.TestCase):
     def setUp(self):
         self.qg = QueryGenerator()
         self.qw = test_wrapper()
+        print("Running", self.id().split('.')[1:])
+
 
 
     def test_class_term(self):
@@ -54,8 +57,8 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
-
     def test_class_images(self):
+
         query = self.qg.roll_query(types=["Class"],
                                    clauses=[self.qg.images],
                                    short_form='FBbt_00007422')
@@ -125,4 +128,4 @@ class QueryRollerTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(verbosity=2)
