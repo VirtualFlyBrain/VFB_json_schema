@@ -3,6 +3,11 @@ python:
   - "3.5"
 install:
   - pip install -r requirements.txt
+  
+before_script:
+  - git clone https://github.com/VirtualFlyBrain/VFB_neo4j.git
+
 script:
-  - python json_schema/test/schema_test.py
-  - python src/test/query_roller_tests.py
+  - export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
+  - cd src/test
+  - python query_roller_tests.py
