@@ -2,6 +2,7 @@ import unittest
 from query_roller import QueryGenerator
 from uk.ac.ebi.vfb.neo4j.neo4j_tools import neo4j_connect,results_2_dict_list
 from schema_test_suite import get_validator, validate
+import datetime
 
 class test_wrapper():
 
@@ -20,9 +21,14 @@ class test_wrapper():
             t = QueryRollerTest object,
             single = True if results list length should be one
             print results: wot it sez on the tin"""
+        start_time = datetime.datetime.now()
         s = self.nc.commit_list([query])
+        end_time = datetime.datetime.now()
+        diff = end_time - start_time
+        time_in_ms = (diff.total_seconds() * 1000)  # something weird going on here.
         t.assertTrue(s, "Cypher query failed.")
         if s:
+            print("Query time (inc API call): %d ms" % time_in_ms)  # Something
             results = results_2_dict_list(s)
             if print_result: print(results)
             if single: t.assertEqual(len(results), 1)
