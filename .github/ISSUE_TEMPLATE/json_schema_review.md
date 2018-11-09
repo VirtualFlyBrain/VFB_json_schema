@@ -1,7 +1,7 @@
 ---
 name: json_schema review
 about: Create a ticket for review of JSON schema
-labels: json_schema_review
+labels: schema_review
 ---
 
 ### What part of the schema is being reviewed?
