@@ -109,6 +109,13 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
+    def test_individual_xrefs(self):
+        query = self.qg.roll_query(types=["Individual"],
+                                   clauses=[self.qg.xrefs],
+                                   short_form='VFB_00011179')
+        r = self.qw.test(t=self,
+                         query=query)
+
     def test_individual_image(self):
         query = self.qg.roll_query(types=["Individual"],
                                    clauses=[self.qg.image],
