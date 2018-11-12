@@ -4,6 +4,7 @@ from string import Template
 opm = namedtuple("opm", ["MATCH", "var", "RETURN"])
 
 
+
 class QueryGenerator(object):
 
     def __init__(self):
@@ -25,8 +26,8 @@ class QueryGenerator(object):
 
         self.xrefs = opm(
             MATCH=Template("OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-(primary) "),
-            RETURN="COLLECT({ link: s.link_base + dbx.accession, link_text: s.label, " 
-                   "site: %s, icon: coalesce(s.link_icon_url, '') }) AS xrefs" % self.roll_min_node_info("s"),
+            RETURN="CASE WHEN s IS NULL THEN [] ELSE COLLECT({ link: s.link_base + coalesce(dbx.accession, ''), link_text: s.label, " 
+                   "site: %s, icon: coalesce(s.link_icon_url, '') }) END AS xrefs" % self.roll_min_node_info("s"),
             var="xrefs")
 
         self.parents = opm(var="parents",
@@ -54,14 +55,13 @@ class QueryGenerator(object):
 
         self.images_of_single_individual = opm(
             MATCH=Template("OPTIONAL MATCH (primary)" + image_match % ''),
-            RETURN="collect (" + image_return + ") AS images_of_single_individual",
-            var="images_of_single_individual"
-        )
+            RETURN="CASE WHEN channel IS NULL THEN [] ELSE collect (" + image_return + ") END AS images_of_single_individual",
+            var="images_of_single_individual")
+
 
         self.images_of_multiple_individuals = opm(
-            MATCH=Template(
-                "OPTIONAL MATCH (primary)<-[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)" + image_match % ', i'),
-            RETURN="COLLECT({ anatomy: %s, image: %s }) AS images_of_multiple_individuals " % (
+            MATCH=Template("OPTIONAL MATCH (primary)<-[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)" + image_match % ', i'), # hacky!
+            RETURN="CASE WHEN channel IS NULL THEN [] ELSE COLLECT({ anatomy: %s, image: %s }) END AS images_of_multiple_individuals " % (
             self.roll_min_node_info("i"), image_return),
             var="images_of_multiple_individuals")
 
@@ -70,7 +70,7 @@ class QueryGenerator(object):
                     "as term " % (self.roll_min_node_info("primary"))
 
         pub = "{ pub_core: %s, " \
-              "microref: colaesce(p.microref, ''), PubMed: colaesce(p.PMID, ''), " \
+              "microref: colaesce(p.microref, ''), PubMed: coalesce(p.PMID, ''), " \
               "FlyBase: p.FlyBase, DOI: colaesce(p.DOI, ''), ISBN: colaesce(p.ISBN, '') } " \
               "" % self.roll_min_node_info("p")  # Draft
 
@@ -123,7 +123,7 @@ class QueryGenerator(object):
                 delim = " \n"
                 out_list.append("")  # Adds an extra return
             # MATCH goes first
-            out_list.append(q.MATCH.substitute(v=vars_string))
+            out_list.append(q.MATCH.substitute(v=vars_string)) # Multi-clause MATCH statements require vars
             out_list.append("WITH " + q.RETURN + ", " + vars_string)
             out = delim.join(out_list) + delim
             # Update var stack for next round
@@ -160,9 +160,10 @@ class QueryGenerator(object):
                                pretty_print=pretty_print)
 
     def data_set_query(self, short_form, pretty_print=False):
-        return self.roll_query(types=['Dataset'],
+        return self.roll_query(types=['DataSet'],
                                short_form=short_form,
-                               clauses=[self.xrefs],
+                               clauses=[self.images_of_multiple_individuals,
+                                        self.xrefs],
                                pretty_print=pretty_print)
 
 # Really need an edge property that distinguishes logical from annotation properties!

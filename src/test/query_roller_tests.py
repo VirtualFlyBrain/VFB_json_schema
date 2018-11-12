@@ -3,6 +3,7 @@ from query_roller import QueryGenerator
 from uk.ac.ebi.vfb.neo4j.neo4j_tools import neo4j_connect,results_2_dict_list
 from schema_test_suite import get_validator, validate
 import datetime
+import json
 
 class test_wrapper():
 
@@ -30,7 +31,7 @@ class test_wrapper():
         if s:
             print("Query time (inc API call): %d ms" % time_in_ms)  # Something
             results = results_2_dict_list(s)
-            if print_result: print(results)
+            if print_result: print(json.dumps(results))
             if single: t.assertEqual(len(results), 1)
             validation_status = validate(self.V, results[0])
             t.assertTrue(validation_status)
@@ -112,7 +113,7 @@ class QueryRollerTest(unittest.TestCase):
     def test_individual_xrefs(self):
         query = self.qg.roll_query(types=["Individual"],
                                    clauses=[self.qg.xrefs],
-                                   short_form='VFB_00011179')
+                                   short_form='VFB_00020249')
         r = self.qw.test(t=self,
                          query=query)
 
@@ -131,6 +132,11 @@ class QueryRollerTest(unittest.TestCase):
 
     def test_individual(self):
         query = self.qg.anatomical_ind_query(short_form='VFB_00011179')
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_dataset(self):
+        query = self.qg.data_set_query(short_form='Ito2013')
         r = self.qw.test(t=self,
                          query=query)
 
