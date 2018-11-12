@@ -66,7 +66,7 @@ class QueryRollerTest(unittest.TestCase):
     def test_class_images(self):
 
         query = self.qg.roll_query(types=["Class"],
-                                   clauses=[self.qg.images],
+                                   clauses=[self.qg.images_of_multiple_individuals],
                                    short_form='FBbt_00007422')
         r = self.qw.test(t=self,
                          query=query)
@@ -118,7 +118,7 @@ class QueryRollerTest(unittest.TestCase):
 
     def test_individual_image(self):
         query = self.qg.roll_query(types=["Individual"],
-                                   clauses=[self.qg.image],
+                                   clauses=[self.qg.images_of_single_individual],
                                    short_form='VFB_00011179')
         r = self.qw.test(t=self,
                          query=query)

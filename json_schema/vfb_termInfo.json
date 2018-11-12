@@ -96,21 +96,34 @@
     },
     "image": {
       "additionalProperties": false,
-      "required": ["folder", "template"],
+      "required": ["image_folder", "template_image", "template_anatomy", "channel", "imaging_technique"],
       "type": "object",
       "properties": {
-        "template": {
-          "type": "string"
+        "template_image": {
+          "type": "object",
+          "$ref": "#/definitions/minimal_entity_info"
         },
-        "folder": {
+        "template_anatomy": {
+          "type": "object",
+          "$ref": "#/definitions/minimal_entity_info"
+        },
+        "channel": {
+          "type": "object",
+          "$ref": "#/definitions/minimal_entity_info"
+        },
+        "image_folder": {
           "type": "string"
         },
         "index": {
           "type": "integer"
+        },
+        "imaging_technique": {
+          "type": "object",
+          "$ref": "#/definitions/minimal_entity_info"
         }
       }
     },
-    "images": {
+    "anatomy_image": {
       "additionalProperties": false,
       "required": ["anatomy", "image"],
       "type": "object",
@@ -285,28 +298,44 @@
   "required": ["term"],
   "type": "object",
   "properties" : {
-    "term": { "$ref": "#/definitions/term" },
-    "images" : {
+    "term": {
+      "$ref": "#/definitions/term"
+    },
+    "images_of_multiple_individuals": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/images" }
+        "$ref": "#/definitions/anatomy_image"
+      }
     },
-    "xrefs" : {
+    "xrefs": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/xref" }
+        "$ref": "#/definitions/xref"
+      }
     },
-    "pub_syn" : {
+    "pub_syn": {
       "type": "array",
-      "items" : { "$ref": "#/definitions/pub_syn" }
+      "items": {
+        "$ref": "#/definitions/pub_syn"
+      }
     },
-    "dataset_license" : {
+    "dataset_license": {
       "type": "array",
-      "items" : { "$ref": "#/definitions/dataset_license" }
+      "items": {
+        "$ref": "#/definitions/dataset_license"
+      }
     },
     "relationships": {
       "type": "array",
-      "items" : { "$ref": "#/definitions/rel" }
+      "items": {
+        "$ref": "#/definitions/rel"
+      }
+    },
+    "related_individuals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/rel"
+      }
     },
     "parents": {
       "type": "array",
@@ -314,7 +343,12 @@
         "$ref": "#/definitions/minimal_entity_info"
       }
     },
-    "image": { "$ref": "#/definitions/image" }
+    "images_of_single_individual": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/image"
+      }
+    }
   }
 }
 

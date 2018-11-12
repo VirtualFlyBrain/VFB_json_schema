@@ -1,6 +1,7 @@
 from collections import namedtuple
+from string import Template
 
-opm = namedtuple("opm", ["MATCH", "var", "RETURN", "LIMIT"])
+opm = namedtuple("opm", ["MATCH", "var", "RETURN"])
 
 
 class QueryGenerator(object):
@@ -23,44 +24,46 @@ class QueryGenerator(object):
         ###  the WITH/RETURN clause.
 
         self.xrefs = opm(
-            MATCH="OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-(primary) ",
-            RETURN="COLLECT({ link: s.link_base + dbx.accession, link_text: s.label, " \
+            MATCH=Template("OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-(primary) "),
+            RETURN="COLLECT({ link: s.link_base + dbx.accession, link_text: s.label, " 
                    "site: %s, icon: coalesce(s.link_icon_url, '') }) AS xrefs" % self.roll_min_node_info("s"),
-            var="xrefs",
-            LIMIT=False)
+            var="xrefs")
 
         self.parents = opm(var="parents",
-                                MATCH="OPTIONAL MATCH (o:Class)<-[r:SUBCLASSOF|INSTANCEOF]-(primary) ",
-                                RETURN="COLLECT (%s) AS parents" % self.roll_min_node_info("o"),
-                                LIMIT=False)  # Draft
+                           MATCH=Template("OPTIONAL MATCH (o:Class)<-[r:SUBCLASSOF|INSTANCEOF]-(primary) "),
+                           RETURN="COLLECT (%s) AS parents" % self.roll_min_node_info("o"))  # Draft
 
         self.relationships = (opm(var="relationships",
-                               MATCH="OPTIONAL MATCH (o)<-[r { type: 'Related' }]-(primary)",
-                               RETURN="COLLECT ({ relation: %s, object: %s }) AS relationships" % (self.roll_min_edge_info("r"),
-                                                                                         self.roll_min_node_info("o")),
-                               LIMIT=False))
-        
-    
+                                  MATCH=Template("OPTIONAL MATCH (o)<-[r { type: 'Related' }]-(primary)"),
+                                  RETURN="COLLECT ({ relation: %s, object: %s }) "
+                                         "AS relationships" % (self.roll_min_edge_info("r"),
+                                                               self.roll_min_node_info("o"))))
 
         image_match = "<-[:depicts]-" \
-                      "(:Individual)-[irw:in_register_with]->(template:Individual)-[:depicts]->" \
-                      "(template_anat:Individual) "
+                      "(channel:Individual)-[irw:in_register_with]->(template:Individual)-[:depicts]->" \
+                      "(template_anat:Individual) WITH template, channel, template_anat, irw, $v %s limit 5 " \
+                      "OPTIONAL MATCH (channel)-[:is_specified_output_of]->(technique:Class) "
 
-        image_return = "{ template: template.label, folder: irw.folder, index: coalesce(irw.index, 0) }"
+        image_return = "{ channel: %s, imaging_technique: %s," \
+                       "template_image: %s, template_anatomy: %s," \
+                       "image_folder: irw.folder, " \
+                       "index: coalesce(irw.index, 0) }" % (self.roll_min_node_info('channel'),
+                                                            self.roll_min_node_info('technique'),
+                                                            self.roll_min_node_info('template'),
+                                                            self.roll_min_node_info('template_anat'))
 
-        self.image = opm(
-            MATCH="OPTIONAL MATCH (primary)" + image_match,
-            RETURN=image_return + " AS image",
-            var="image",
-            LIMIT=False
+        self.images_of_single_individual = opm(
+            MATCH=Template("OPTIONAL MATCH (primary)" + image_match % ''),
+            RETURN="collect (" + image_return + ") AS images_of_single_individual",
+            var="images_of_single_individual"
         )
 
-        self.images = opm(
-            MATCH="OPTIONAL MATCH (primary)<-[:SUBCLASSOF|INSTANCEOF*]-(i:Individual)%s" % image_match,
-            RETURN="COLLECT({ anatomy: %s, image: %s }) AS images " % (self.roll_min_node_info("i"), image_return),
-            var="images",
-            LIMIT="WITH template, irw, i, %s limit 5")  # Not keen on this hidden sub...
-
+        self.images_of_multiple_individuals = opm(
+            MATCH=Template(
+                "OPTIONAL MATCH (primary)<-[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)" + image_match % ', i'),
+            RETURN="COLLECT({ anatomy: %s, image: %s }) AS images_of_multiple_individuals " % (
+            self.roll_min_node_info("i"), image_return),
+            var="images_of_multiple_individuals")
 
         self.term = "{ core: %s, description: primary.description, " \
                     "comment: coalesce(primary.`annotation-comment`, [])} " \
@@ -72,30 +75,23 @@ class QueryGenerator(object):
               "" % self.roll_min_node_info("p")  # Draft
 
         synonym = "{ label: coalesce(rp.synonym, ''), " \
-                  "scope: coalesce(rp.scope, ''), type: coalesce(rp.cat,'') } " # Draft
+                  "scope: coalesce(rp.scope, ''), type: coalesce(rp.cat,'') } "  # Draft
 
-
-        self.pub_syn = opm(MATCH="OPTIONAL MATCH (primary)-[rp:has_reference]->(p:pub)",
+        self.pub_syn = opm(MATCH=Template("OPTIONAL MATCH (primary)-[rp:has_reference]->(p:pub)"),
                            RETURN="COLLECT ( { pub: %s, synonym: %s } ) AS pub_syn" % (pub, synonym),
-                           var='pub_syn',
-                           LIMIT=False)  # Draft
-
-
+                           var='pub_syn')  # Draft
 
     def roll_min_node_info(self, var):
         """Rolls core JSON (specifying minimal info about an entity.
         var: the variable name for the entity within this cypher clause."""
         return "{ short_form: %s.short_form, label: %s.label, " \
                "iri: %s.iri, types: labels(%s) } " % (var, var, var, var)
-    
 
     def roll_min_edge_info(self, var):
         """Rolls core JSON (specifying minimal info about an edge.
         var: the variable name for the edge within this cypher clause."""
         return "{ label: %s.label, " \
                "iri: %s.uri, type: type(%s) } " % (var, var, var)  # short_forms are not present in OLS-PDB
-    
-    
 
     def roll_query(self, types, clauses, short_form, pretty_print=False):
 
@@ -123,16 +119,11 @@ class QueryGenerator(object):
             # Output items added to stack in order
             # Will be strung toghether later with spec' d delim
             out_list = []
-
             if pretty_print:
                 delim = " \n"
                 out_list.append("")  # Adds an extra return
             # MATCH goes first
-            out_list.append(q.MATCH)
-            # Then LIMIT if there is one
-            if q.LIMIT:
-                out_list.append(q.LIMIT % vars_string)
-            # then WITH (RETURN clause)
+            out_list.append(q.MATCH.substitute(v=vars_string))
             out_list.append("WITH " + q.RETURN + ", " + vars_string)
             out = delim.join(out_list) + delim
             # Update var stack for next round
@@ -156,7 +147,7 @@ class QueryGenerator(object):
                                clauses=[self.parents,
                                         self.relationships,
                                         self.xrefs,
-                                        self.image],
+                                        self.images_of_single_individual],
                                pretty_print=pretty_print)  # Is Anatomy label sufficient here
 
     def class_query(self, short_form, pretty_print=False):
@@ -165,7 +156,7 @@ class QueryGenerator(object):
                                clauses=[self.parents,
                                         self.relationships,
                                         self.xrefs,
-                                        self.images],
+                                        self.images_of_multiple_individuals],
                                pretty_print=pretty_print)
 
     def data_set_query(self, short_form, pretty_print=False):
