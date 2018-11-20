@@ -70,19 +70,26 @@
         "description": {
           "description": "A string describing or defining an entity. This field is an array, allowing for multiple descriptions, but only one is typically expected.",
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "comment": {
           "description": "rdfs:comment.  This field is an array, allowing for multiple descriptions, but only one is typically expected.",
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
-    "rel" : {
+    "rel": {
       "type": "object",
       "additionalProperties": false,
-      "Required": ["relation", "object"],
+      "Required": [
+        "relation",
+        "object"
+      ],
       "properties": {
         "relation": {
           "type": "object",
@@ -94,28 +101,43 @@
         }
       }
     },
-    "image": {
+    "channel_image": {
       "additionalProperties": false,
-      "required": ["image_folder", "template_image", "template_anatomy", "channel", "imaging_technique"],
+      "required": [
+        "image",
+        "channel",
+        "imaging_technique"
+      ],
       "type": "object",
       "properties": {
-        "template_image": {
+        "image": {
           "type": "object",
-          "$ref": "#/definitions/minimal_entity_info"
-        },
-        "template_anatomy": {
-          "type": "object",
-          "$ref": "#/definitions/minimal_entity_info"
+          "additionalProperties": false,
+          "required": [
+            "image_folder",
+            "template_channel",
+            "template_anatomy"
+          ],
+          "properties": {
+            "image_folder": {
+              "type": "string"
+            },
+            "index": {
+              "type": "integer"
+            },
+            "template_channel": {
+              "type": "object",
+              "$ref": "#/definitions/minimal_entity_info"
+            },
+            "template_anatomy": {
+              "type": "object",
+              "$ref": "#/definitions/minimal_entity_info"
+            }
+          }
         },
         "channel": {
           "type": "object",
           "$ref": "#/definitions/minimal_entity_info"
-        },
-        "image_folder": {
-          "type": "string"
-        },
-        "index": {
-          "type": "integer"
         },
         "imaging_technique": {
           "type": "object",
@@ -123,22 +145,29 @@
         }
       }
     },
-    "anatomy_image": {
+    "anatomy_channel_image": {
       "additionalProperties": false,
-      "required": ["anatomy", "image"],
+      "required": [
+        "anatomy",
+        "channel_image"
+      ],
       "type": "object",
       "properties": {
         "anatomy": {
           "$ref": "#/definitions/minimal_entity_info"
         },
-        "image": {
-          "$ref": "#/definitions/image"
+        "channel_image": {
+          "$ref": "#/definitions/channel_image"
         }
       }
     },
     "xref": {
       "additionalProperties": false,
-      "required": ["link", "link_text", "site"],
+      "required": [
+        "link",
+        "link_text",
+        "site"
+      ],
       "type": "object",
       "properties": {
         "link": {
@@ -191,9 +220,9 @@
       "properties": {
         "core": {
           "type": "object",
-          "$ref" : "#/definitions/minimal_entity_info"
+          "$ref": "#/definitions/minimal_entity_info"
         },
-        "url": {
+        "link": {
           "description": "A URL linking to a license.",
           "type": "string"
         },
@@ -212,27 +241,35 @@
     },
     "dataset_license": {
       "additionalProperties": false,
-      "required": ["dataset", "license"],
+      "required": [
+        "dataset",
+        "license"
+      ],
       "type": "object",
       "properties": {
         "dataset": {
           "properties": {
-            "dataset": { "$ref" : "#/definitions/dataset" },
-            "license": { "$ref" : "#/definitions/license" }
+            "dataset": {
+              "$ref": "#/definitions/dataset"
+            },
+            "license": {
+              "$ref": "#/definitions/license"
+            }
           }
         }
       }
     },
     "pub": {
       "additionalProperties": false,
-      "required": ["label"],
+      "required": [
+        "core"
+      ],
       "schema_comment": "Better to model links as xrefs?",
       "type": "object",
       "properties": {
         "core": {
           "type": "object",
           "$ref": "#/definitions/minimal_entity_info"
-          }
         },
         "microref": {
           "description": "A minimal reference text for use in display where space is limited. For single authors: Ghysen, 1998; For multiple authors Ghysen et al., 1986",
@@ -250,7 +287,8 @@
         "ISBN": {
           "type": "string"
         }
-      },
+      }
+    },
     "synonym": {
       "additionalProperties": false,
       "required": [
@@ -275,14 +313,10 @@
       "type": "object",
       "additional_properties": false,
       "required": [
-        "relation",
         "synonym",
         "pub"
       ],
       "properties": {
-        "relation": {
-          "type": "string"
-        },
         "synonym": {
           "type": "object",
           "$ref": "#/definitions/synonym"
@@ -295,16 +329,18 @@
     }
   },
   "additionalProperties": false,
-  "required": ["term"],
+  "required": [
+    "term"
+  ],
   "type": "object",
-  "properties" : {
+  "properties": {
     "term": {
       "$ref": "#/definitions/term"
     },
-    "images_of_multiple_individuals": {
+    "anatomy_channel_image": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/anatomy_image"
+        "$ref": "#/definitions/anatomy_channel_image"
       }
     },
     "xrefs": {
@@ -317,6 +353,12 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/pub_syn"
+      }
+    },
+    "license": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/license"
       }
     },
     "dataset_license": {
@@ -343,10 +385,10 @@
         "$ref": "#/definitions/minimal_entity_info"
       }
     },
-    "images_of_single_individual": {
+    "channel_image": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/image"
+        "$ref": "#/definitions/channel_image"
       }
     }
   }
