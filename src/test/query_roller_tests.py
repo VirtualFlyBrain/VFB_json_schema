@@ -3,6 +3,7 @@ from query_roller import QueryGenerator
 from uk.ac.ebi.vfb.neo4j.neo4j_tools import neo4j_connect,results_2_dict_list
 from schema_test_suite import get_validator, validate
 import datetime
+import json
 
 class test_wrapper():
 
@@ -11,7 +12,7 @@ class test_wrapper():
         self.nc = neo4j_connect('http://pdb.virtualflybrain.org', 'neo4j', 'neo4j')
 
 
-    def test(self, t, query, single=True, print_result=True):
+    def test(self, t, query, single=True, print_result=True, print_query=True):
 
         """Runs Cypher query.
             Tests if query failed else
@@ -22,6 +23,7 @@ class test_wrapper():
             single = True if results list length should be one
             print results: wot it sez on the tin"""
         start_time = datetime.datetime.now()
+        if print_query: print("QUERY: " + query)
         s = self.nc.commit_list([query])
         end_time = datetime.datetime.now()
         diff = end_time - start_time
@@ -30,7 +32,7 @@ class test_wrapper():
         if s:
             print("Query time (inc API call): %d ms" % time_in_ms)  # Something
             results = results_2_dict_list(s)
-            if print_result: print(results)
+            if print_result: print(json.dumps(results[0]))
             if single: t.assertEqual(len(results), 1)
             validation_status = validate(self.V, results[0])
             t.assertTrue(validation_status)
@@ -66,7 +68,7 @@ class QueryRollerTest(unittest.TestCase):
     def test_class_images(self):
 
         query = self.qg.roll_query(types=["Class"],
-                                   clauses=[self.qg.images],
+                                   clauses=[self.qg.anatomy_channel_image],
                                    short_form='FBbt_00007422')
         r = self.qw.test(t=self,
                          query=query)
@@ -93,6 +95,19 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
+    # def test_class_def_pubs(self):
+    #     query = self.qg.roll_query(types=["Class"],
+    #                                clauses=[self.qg.def_pubs],
+    #                                short_form='FBbt_00007422')
+    #     r = self.qw.test(t=self,
+    #                      query=query)
+    #
+    # def test_class_pub_syn(self):
+    #     query = self.qg.roll_query(types=["Class"],
+    #                                clauses=[self.qg.pub_syn],
+    #                                short_form='FBbt_00007422')
+    #     r = self.qw.test(t=self,
+    #                      query=query)
 
     def test_individual_relationships(self):
         query = self.qg.roll_query(types=["Individual"],
@@ -109,12 +124,20 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
+    def test_individual_xrefs(self):
+        query = self.qg.roll_query(types=["Individual"],
+                                   clauses=[self.qg.xrefs],
+                                   short_form='VFB_00020249')
+        r = self.qw.test(t=self,
+                         query=query)
+
     def test_individual_image(self):
         query = self.qg.roll_query(types=["Individual"],
-                                   clauses=[self.qg.image],
+                                   clauses=[self.qg.channel_image],
                                    short_form='VFB_00011179')
         r = self.qw.test(t=self,
                          query=query)
+
 
     def test_class(self):
         query = self.qg.class_query(short_form='FBbt_00007422')
@@ -126,6 +149,28 @@ class QueryRollerTest(unittest.TestCase):
         query = self.qg.anatomical_ind_query(short_form='VFB_00011179')
         r = self.qw.test(t=self,
                          query=query)
+
+    # def test_dataset_license(self):
+    #     query = self.qg.roll_query(types = ['DataSet'],
+    #                                short_form='Ito2013',
+    #                                clauses=[self.qg.license])
+    #     r = self.qw.test(t=self,
+    #                      query=query)
+    #
+    # def test_dataset_xrefs(self):
+    #     query = self.qg.roll_query(types = ['DataSet'],
+    #                                short_form='Ito2013',
+    #                                clauses=[self.qg.xrefs])
+    #     r = self.qw.test(t=self,
+    #                      query=query)
+    #
+    # def test_dataset_anatomy_channel_image(self):
+    #     query = self.qg.roll_query(types = ['DataSet'],
+    #                                short_form='Ito2013',
+    #                                clauses=[self.qg.anatomy_channel_image])
+    #     r = self.qw.test(t=self,
+    #                      query=query)
+
 
 
 
