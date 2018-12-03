@@ -138,6 +138,13 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
+    def test_individual_dataset_license(self):
+        query = self.qg.roll_query(types=["Individual"],
+                                   clauses=[self.qg.dataSet_license],
+                                   short_form='VFB_00011179')
+        r = self.qw.test(t=self,
+                         query=query)
+
 
     def test_class(self):
         query = self.qg.class_query(short_form='FBbt_00007422')
@@ -150,12 +157,13 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
-    # def test_dataset_license(self):
-    #     query = self.qg.roll_query(types = ['DataSet'],
-    #                                short_form='Ito2013',
-    #                                clauses=[self.qg.license])
-    #     r = self.qw.test(t=self,
-    #                      query=query)
+
+    def test_dataset_license(self):
+        query = self.qg.roll_query(types = ['DataSet'],
+                                   short_form='Ito2013',
+                                   clauses=[self.qg.license])
+        r = self.qw.test(t=self,
+                         query=query)
 
     def test_dataset_xrefs(self):
         query = self.qg.roll_query(types = ['DataSet'],

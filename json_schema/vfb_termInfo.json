@@ -200,12 +200,16 @@
           "type": "object",
           "$ref": "#/definitions/minimal_entity_info"
         },
-        "url": {
+        "link": {
           "description": "A URL linking to some third party site.",
           "type": "string"
         },
         "icon": {
           "description": "A link to an icon to display for the third party site.",
+          "type": "string"
+        },
+        "catmaid_annotation_id": {
+          "description": "ID in CATMAID server",
           "type": "string"
         }
       }
@@ -230,10 +234,6 @@
           "description": "A link to an icon to display for the license.",
           "type": "string"
         },
-        "license_text": {
-          "description": "Text of the license - to be used for bespoke licenses only",
-          "type": "string"
-        },
         "is_bespoke": {
           "type": "boolean"
         }
@@ -248,14 +248,10 @@
       "type": "object",
       "properties": {
         "dataset": {
-          "properties": {
-            "dataset": {
-              "$ref": "#/definitions/dataset"
-            },
-            "license": {
-              "$ref": "#/definitions/license"
-            }
-          }
+          "$ref": "#/definitions/dataset"
+        },
+        "license": {
+          "$ref": "#/definitions/license"
         }
       }
     },
