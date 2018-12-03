@@ -76,19 +76,19 @@ class QueryGenerator(object):
                     "as term " % (self.roll_min_node_info("primary"))
 
         pub_return = "{ core: %s, " \
-                     "microref: coalesce(p.microref, ''), PubMed: coalesce(p.PMID, ''), " \
-                     "FlyBase: coalesce(p.FlyBase, ''), DOI: coalesce(p.DOI, ''), ISBN: coalesce(p.ISBN, '') } " \
+                     "PubMed: coalesce(p.PMID, ''), " \
+                     "FlyBase: coalesce(p.FlyBase, ''), DOI: coalesce(p.DOI, '') } " \
                      "" % self.roll_min_node_info("p")  # Draft
 
         syn_return = "{ label: coalesce(rp.synonym, ''), " \
                      "scope: coalesce(rp.scope, ''), type: coalesce(rp.cat,'') } "  # Dr
 
-        self.def_pubs = opm(MATCH=Template("OPTIONAL MATCH (primary)-[rp:has_reference { typ: 'def'}]->(p:pub)"),
-                            RETURN="CASE WHEN p is null THEN [] ELSE collect(" + pub_return + ")as def_pubs END",
+        self.def_pubs = opm(MATCH=Template("OPTIONAL MATCH (primary)-[rp:has_reference { typ: 'def'}]->(p:pub) "),
+                            RETURN="CASE WHEN p is null THEN [] ELSE collect(" + pub_return + ") END AS def_pubs",
                             var='def_pubs')
 
-        self.pub_syn = opm(MATCH=Template("OPTIONAL MATCH (primary)-[rp:has_reference { typ: 'syn'}]->(p:pub)"),
-                           RETURN="CASE WHEN p is null THEN [] ELSE collect({ pub: %s, synonym: %s }) as pub_syn ED" % (pub_return, syn_return),
+        self.pub_syn = opm(MATCH=Template("OPTIONAL MATCH (primary)-[rp:has_reference { typ: 'syn'}]->(p:pub) "),
+                           RETURN="CASE WHEN p is null THEN [] ELSE collect({ pub: %s, synonym: %s }) END AS pub_syn" % (pub_return, syn_return),
                            var='pub_syn')
 
         self.license = opm(MATCH=Template("OPTIONAL MATCH (primary)-[:license]->(l:License)"),
@@ -109,7 +109,7 @@ class QueryGenerator(object):
         return "{ label: %s.label, " \
                "iri: %s.uri, type: type(%s) } " % (var, var, var)  # short_forms are not present in OLS-PDB
 
-    def roll_query(self, types, clauses, short_form, pretty_print=False):
+    def roll_query(self, types, clauses, short_form, pretty_print=True):
 
         """Takes a list of types (Neo4J labels), a short_form
         and a list of clauses (opm objects) and returns a cypher query.
@@ -173,7 +173,9 @@ class QueryGenerator(object):
                                clauses=[self.parents,
                                         self.relationships,
                                         self.xrefs,
-                                        self.channel_image],
+                                        self.channel_image,
+                                        self.pub_syn,
+                                        self.def_pubs],
                                pretty_print=pretty_print)
 
     def data_set_query(self, short_form, pretty_print=False):
