@@ -95,19 +95,19 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
-    # def test_class_def_pubs(self):
-    #     query = self.qg.roll_query(types=["Class"],
-    #                                clauses=[self.qg.def_pubs],
-    #                                short_form='FBbt_00007422')
-    #     r = self.qw.test(t=self,
-    #                      query=query)
-    #
-    # def test_class_pub_syn(self):
-    #     query = self.qg.roll_query(types=["Class"],
-    #                                clauses=[self.qg.pub_syn],
-    #                                short_form='FBbt_00007422')
-    #     r = self.qw.test(t=self,
-    #                      query=query)
+    def test_class_def_pubs(self):
+        query = self.qg.roll_query(types=["Class"],
+                                   clauses=[self.qg.def_pubs],
+                                   short_form='FBbt_00000591')
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_class_pub_syn(self):
+        query = self.qg.roll_query(types=["Class"],
+                                   clauses=[self.qg.pub_syn],
+                                   short_form='FBbt_00000591')
+        r = self.qw.test(t=self,
+                         query=query)
 
     def test_individual_relationships(self):
         query = self.qg.roll_query(types=["Individual"],
@@ -156,6 +156,7 @@ class QueryRollerTest(unittest.TestCase):
         query = self.qg.anatomical_ind_query(short_form='VFB_00011179')
         r = self.qw.test(t=self,
                          query=query)
+
 
     def test_dataset_license(self):
         query = self.qg.roll_query(types = ['DataSet'],

@@ -272,7 +272,7 @@
           "type": "string"
         },
         "PubMed": {
-          "type": "integer"
+          "type": "string"
         },
         "FlyBase": {
           "type": "string"
@@ -349,6 +349,12 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/pub_syn"
+      }
+    },
+    "def_pubs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/pub"
       }
     },
     "license": {
