@@ -88,13 +88,26 @@ class QueryGenerator(object):
                             var='def_pubs')
 
         self.pub_syn = opm(MATCH=Template("OPTIONAL MATCH (primary)-[rp:has_reference { typ: 'syn'}]->(p:pub)"),
-                           RETURN="CASE WHEN p is null THEN [] ELSE collect({ pub: %s, synonym: %s }) as pub_syn ED" % (pub_return, syn_return),
+                           RETURN="CASE WHEN p is null THEN [] ELSE collect({ pub: %s, synonym: %s }) "
+                                  "AS pub_syn ED" % (pub_return, syn_return),
                            var='pub_syn')
 
-        self.license = opm(MATCH=Template("OPTIONAL MATCH (primary)-[:license]->(l:License)"),
-                           RETURN="collect ({ core: %s, license_text: coalesce(l.license_text, ''), "
-                                  "icon: coalesce(l.icon, ''), link: coalesce(l.url, '')}) as license " % (
-                               self.roll_min_node_info('l')),
+        dataset_return = "{ core: %s, catmaid_annotation_id: coalesce(ds.catmaid_annotation_id, ''), " \
+                         "link: coalesce(ds.dataset_link, '')  }" % (self.roll_min_node_info('ds'))
+
+        license_return = "{ core: %s, " \
+                          "icon: coalesce(l.license_logo, ''), link: coalesce(l.license_url, '')} " % (
+                           self.roll_min_node_info('l'))
+
+        self.dataSet_license = opm(MATCH=Template("OPTIONAL MATCH (primary)-[:has_source]->(ds:DataSet)"
+                                                  "-[:has_license]->(l:License)"),
+                                   RETURN="COLLECT ({ dataset: %s, license: %s}) "
+                                          "AS dataset_license" % (dataset_return, license_return),
+                                   var='dataset_license')
+
+
+        self.license = opm(MATCH=Template("OPTIONAL MATCH (primary)-[:has_license]->(l:License)"),
+                           RETURN="collect (%s) as license" % license_return,
                            var='license')
 
     def roll_min_node_info(self, var):

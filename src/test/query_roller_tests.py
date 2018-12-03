@@ -9,7 +9,7 @@ class test_wrapper():
 
     def __init__(self):
         self.V = get_validator("../../json_schema/vfb_termInfo.json")
-        self.nc = neo4j_connect('http://pdb.virtualflybrain.org', 'neo4j', 'neo4j')
+        self.nc = neo4j_connect('http://pdb-alpha.virtualflybrain.org', 'neo4j', 'neo4j')
 
 
     def test(self, t, query, single=True, print_result=True, print_query=True):
@@ -138,6 +138,13 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
+    def test_individual_dataset_license(self):
+        query = self.qg.roll_query(types=["Individual"],
+                                   clauses=[self.qg.dataSet_license],
+                                   short_form='VFB_00011179')
+        r = self.qw.test(t=self,
+                         query=query)
+
 
     def test_class(self):
         query = self.qg.class_query(short_form='FBbt_00007422')
@@ -150,26 +157,26 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
-    # def test_dataset_license(self):
-    #     query = self.qg.roll_query(types = ['DataSet'],
-    #                                short_form='Ito2013',
-    #                                clauses=[self.qg.license])
-    #     r = self.qw.test(t=self,
-    #                      query=query)
-    #
-    # def test_dataset_xrefs(self):
-    #     query = self.qg.roll_query(types = ['DataSet'],
-    #                                short_form='Ito2013',
-    #                                clauses=[self.qg.xrefs])
-    #     r = self.qw.test(t=self,
-    #                      query=query)
-    #
-    # def test_dataset_anatomy_channel_image(self):
-    #     query = self.qg.roll_query(types = ['DataSet'],
-    #                                short_form='Ito2013',
-    #                                clauses=[self.qg.anatomy_channel_image])
-    #     r = self.qw.test(t=self,
-    #                      query=query)
+    def test_dataset_license(self):
+        query = self.qg.roll_query(types = ['DataSet'],
+                                   short_form='Ito2013',
+                                   clauses=[self.qg.license])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_dataset_xrefs(self):
+        query = self.qg.roll_query(types = ['DataSet'],
+                                   short_form='Ito2013',
+                                   clauses=[self.qg.xrefs])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_dataset_anatomy_channel_image(self):
+        query = self.qg.roll_query(types = ['DataSet'],
+                                   short_form='Ito2013',
+                                   clauses=[self.qg.anatomy_channel_image])
+        r = self.qw.test(t=self,
+                         query=query)
 
 
 
