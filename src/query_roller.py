@@ -65,8 +65,7 @@ class QueryGenerator(object):
 
         self.anatomy_channel_image = opm(
             MATCH=Template(
-                "OPTIONAL MATCH (primary)<-[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)" + channel_image_match % ', i'),
-            # hacky!
+                "OPTIONAL MATCH (primary)<-[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)" + channel_image_match % ', i'), # Hacky sub!
             RETURN="CASE WHEN channel IS NULL THEN [] ELSE COLLECT({ anatomy: %s, channel_image: %s }) END AS anatomy_channel_image " % (
                 self.roll_min_node_info("i"), channel_image_return),
             var="anatomy_channel_image")
@@ -90,6 +89,10 @@ class QueryGenerator(object):
         self.pub_syn = opm(MATCH=Template("OPTIONAL MATCH (primary)-[rp:has_reference { typ: 'syn'}]->(p:pub) "),
                            RETURN="CASE WHEN p is null THEN [] ELSE collect({ pub: %s, synonym: %s }) END AS pub_syn" % (pub_return, syn_return),
                            var='pub_syn')
+
+        self.pub = opm(MATCH=Template("OPTIONAL MATCH (primary)-[rp:has_reference]->(p:pub) "),
+                       RETURN="CASE WHEN p is null THEN [] ELSE collect(" + pub_return + ") END AS def_pubs",
+                       var='def_pubs')
 
         dataset_return = "{ core: %s, catmaid_annotation_id: coalesce(ds.catmaid_annotation_id, ''), " \
                          "link: coalesce(ds.dataset_link, '')  }" % (self.roll_min_node_info('ds'))
@@ -195,7 +198,8 @@ class QueryGenerator(object):
                                short_form=short_form,
                                clauses=[self.anatomy_channel_image,
                                         self.xrefs,
-                                        self.license],
+                                        self.license,
+                                        self.pub],
                                pretty_print=pretty_print)
 
 # Really need an edge property that distinguishes logical from annotation properties!

@@ -27,10 +27,10 @@ class test_wrapper():
         s = self.nc.commit_list([query])
         end_time = datetime.datetime.now()
         diff = end_time - start_time
-        time_in_ms = (diff.total_seconds() * 1000)  # something weird going on here.
+        time_in_ms = (diff.total_seconds() * 1000)
         t.assertTrue(s, "Cypher query failed.")
         if s:
-            print("Query time (inc API call): %d ms" % time_in_ms)  # Something
+            print("Query time (inc API call): %d ms" % time_in_ms)
             results = results_2_dict_list(s)
             if print_result: print(json.dumps(results[0]))
             if single: t.assertEqual(len(results), 1)
@@ -169,6 +169,13 @@ class QueryRollerTest(unittest.TestCase):
         query = self.qg.roll_query(types = ['DataSet'],
                                    short_form='Ito2013',
                                    clauses=[self.qg.xrefs])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_dataset_pub(self):
+        query = self.qg.roll_query(types = ['DataSet'],
+                                   short_form='Ito2013',
+                                   clauses=[self.qg.pub])
         r = self.qw.test(t=self,
                          query=query)
 
