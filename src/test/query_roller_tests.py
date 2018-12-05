@@ -119,7 +119,7 @@ class QueryRollerTest(unittest.TestCase):
 
     def test_individual_parents(self):
         query = self.qg.roll_query(types=["Individual"],
-                                   clauses=[self.qg.relationships],
+                                   clauses=[self.qg.parents],
                                    short_form='VFB_00011179')
         r = self.qw.test(t=self,
                          query=query)
