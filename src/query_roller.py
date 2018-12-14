@@ -238,7 +238,12 @@ class QueryGenerator(object):
                                short_form=short_form,
                                clauses=[self.template_channel,
                                         self.template_domain,
-                                        self.license],
+                                        self.license,
+                                        self.parents,
+                                        self.relationships,
+                                        self.xrefs,
+                                        self.related_individuals
+                                        ],
                                pretty_print=pretty_print)
 
 # Really need an edge property that distinguishes logical from annotation properties!
