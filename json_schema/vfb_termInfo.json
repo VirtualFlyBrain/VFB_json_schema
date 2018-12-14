@@ -123,7 +123,12 @@
               "type": "string"
             },
             "index": {
-              "type": "integer"
+              "type": "array",
+              "items": {
+                "type": "integer"
+              },
+              "minItems": 0,
+              "maxItems": 1
             },
             "template_channel": {
               "type": "object",
@@ -160,6 +165,45 @@
           "$ref": "#/definitions/channel_image"
         }
       }
+    },
+    "domain": {
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "folder",
+        "anatomical_individual",
+        "anatomical_type"
+      ],
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "center": {
+          "type": "string"
+        },
+        "folder": {
+          "type": "string"
+        },
+        "anatomical_individual": {
+          "$ref": "#/definitions/minimal_entity_info"
+        },
+        "anatomical_type": {
+          "$ref": "#/definitions/minimal_entity_info"
+        }
+      }
+    },
+    "template_channel": {
+      "additionalProperties": false,
+      "required": [
+        "index"
+      ],
+      "type": "object",
+      "properties": {}
+
     },
     "xref": {
       "additionalProperties": false,
@@ -391,6 +435,14 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/channel_image"
+      }
+    },
+    "template_domains": {
+      "domains": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/domain"
+        }
       }
     }
   }
