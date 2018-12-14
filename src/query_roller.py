@@ -238,7 +238,7 @@ class QueryGenerator(object):
                                short_form=short_form,
                                clauses=[self.template_channel,
                                         self.template_domain,
-                                        self.license,
+                                        self.dataSet_license,
                                         self.parents,
                                         self.relationships,
                                         self.xrefs,
