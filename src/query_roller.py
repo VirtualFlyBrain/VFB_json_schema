@@ -25,7 +25,8 @@ class QueryGenerator(object):
 
         self.xrefs = opm(
             MATCH=Template("OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-(primary) "),
-            RETURN="CASE WHEN s IS NULL THEN [] ELSE COLLECT({ link: s.link_base + coalesce(dbx.accession, ''), link_text: s.label, "
+            RETURN="CASE WHEN s IS NULL THEN [] ELSE COLLECT"
+                   "({ link: s.link_base + coalesce(dbx.accession, ''), link_text: s.label, "
                    "site: %s, icon: coalesce(s.link_icon_url, '') }) END AS xrefs" % self.roll_min_node_info("s"),
             var="xrefs")
 
@@ -43,7 +44,8 @@ class QueryGenerator(object):
         self.related_individuals = (opm(var="related_individuals",
                                         MATCH=Template(
                                             "OPTIONAL MATCH (o:Individual)<-[r { type: 'Related' }]-(primary)"),
-                                        RETURN="CASE WHEN o IS NULL THEN [] ELSE COLLECT ({ relation: %s, object: %s }) "
+                                        RETURN="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
+                                               "({ relation: %s, object: %s }) "
                                                "END AS related_individuals " % (self.roll_min_edge_info("r"),
                                                                                 self.roll_min_node_info("o"))))
 
@@ -62,16 +64,19 @@ class QueryGenerator(object):
                 "UNWIND painted_domains AS pd "
                 "MATCH (channel:Individual { short_form: pd.channel.short_form})"
                 "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
-            RETURN="collect({ anatomical_type: { label: c.label, short_form: c.short_form, types: labels(c)},"
-                   " anatomical_individual: { label: ai.label, short_form: ai.short_form, "
-                   "types: labels(ai) }, folder: pd.irw.folder, center: pd.irw.center }) AS template_domains",
+            RETURN="collect({ anatomical_type: %s ,"
+                   " anatomical_individual: %s, folder: pd.irw.folder, "
+                   "center: pd.irw.center }) AS template_domains" % (self.roll_min_node_info("c"),
+                                                                     self.roll_min_node_info("ai")),
             var="template_domains")
 
         self.template_channel = opm(
             MATCH=Template(
                 "MATCH (channel:Individual)<-[irw:in_register_with]-"
                 "(channel:Individual)-[:depicts]->(primary)"),
-            RETURN="{} as template_channel",
+            RETURN="{ index: coalesce(irw.index, []) + [], extent: irw.extent, center: irw.center, voxel: irw.voxel, "
+                   "orientation: irw.orientation, image_folder: irw.folder, "
+                   "channel: %s } as template_channel" % self.roll_min_node_info("channel"),
             var="template_channel")
 
         channel_image_return = "{ channel: %s, imaging_technique: %s," \

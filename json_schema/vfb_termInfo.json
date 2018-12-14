@@ -202,8 +202,49 @@
         "index"
       ],
       "type": "object",
-      "properties": {}
-
+      "properties": {
+        "index": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 0,
+          "maxItems": 1
+        },
+        "center" : {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+          "minItems": 0,
+          "maxItems": 3
+        },
+        "extent" : {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+          "minItems": 0,
+          "maxItems": 3
+        },
+        "voxel" : {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+          "minItems": 0,
+          "maxItems": 3
+        },
+        "orientation" : {
+          "type": "string"
+        },
+        "image_folder" : {
+          "type": "string"
+        },
+        "channel": {
+          "$ref": "#/definitions/minimal_entity_info"
+        }
+      }
     },
     "xref": {
       "additionalProperties": false,
@@ -444,7 +485,8 @@
           "$ref": "#/definitions/domain"
         }
       }
-    }
+    },
+    "template_channel": { "$ref": "#/definitions/template_channel" }
   }
 }
 
