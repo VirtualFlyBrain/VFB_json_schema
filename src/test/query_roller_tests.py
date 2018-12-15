@@ -205,6 +205,7 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
+
     def tearDown(self):
         return
 

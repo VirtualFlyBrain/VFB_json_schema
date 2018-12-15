@@ -66,7 +66,7 @@ class QueryGenerator(object):
                 "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
             RETURN="collect({ anatomical_type: %s ,"
                    " anatomical_individual: %s, folder: pd.irw.folder, "
-                   "center: pd.irw.center }) AS template_domains" % (self.roll_min_node_info("c"),
+                   "center: coalesce (pd.irw.center, []), index: [] + coalesce (pd.irw.index, []) }) AS template_domains" % (self.roll_min_node_info("c"),
                                                                      self.roll_min_node_info("ai")),
             var="template_domains")
 
