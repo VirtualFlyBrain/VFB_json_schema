@@ -25,38 +25,67 @@ class QueryGenerator(object):
 
         self.xrefs = opm(
             MATCH=Template("OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-(primary) "),
-            RETURN="CASE WHEN s IS NULL THEN [] ELSE COLLECT({ link: s.link_base + coalesce(dbx.accession, ''), link_text: s.label, "
+            RETURN="CASE WHEN s IS NULL THEN [] ELSE COLLECT"
+                   "({ link: s.link_base + coalesce(dbx.accession, ''), link_text: s.label, "
                    "site: %s, icon: coalesce(s.link_icon_url, '') }) END AS xrefs" % self.roll_min_node_info("s"),
             var="xrefs")
 
         self.parents = opm(var="parents",
                            MATCH=Template("OPTIONAL MATCH (o:Class)<-[r:SUBCLASSOF|INSTANCEOF]-(primary) "),
-                           RETURN="CASE WHEN o IS NULL THEN [] ELSE COLLECT (%s) END AS parents " % self.roll_min_node_info("o"))  # Draft
+                           RETURN="CASE WHEN o IS NULL THEN [] ELSE COLLECT (%s) END AS parents " % self.roll_min_node_info(
+                               "o"))  # Draft
 
         self.relationships = (opm(var="relationships",
                                   MATCH=Template("OPTIONAL MATCH (o)<-[r { type: 'Related' }]-(primary)"),
                                   RETURN="CASE WHEN o IS NULL THEN [] ELSE COLLECT ({ relation: %s, object: %s }) "
                                          "END AS relationships " % (self.roll_min_edge_info("r"),
-                                                               self.roll_min_node_info("o"))))
+                                                                    self.roll_min_node_info("o"))))
 
         self.related_individuals = (opm(var="related_individuals",
-                                  MATCH=Template("OPTIONAL MATCH (o:Individual)<-[r { type: 'Related' }]-(primary)"),
-                                  RETURN="CASE WHEN o IS NULL THEN [] ELSE COLLECT ({ relation: %s, object: %s }) "
-                                         "END AS related_individuals " % (self.roll_min_edge_info("r"),
-                                                               self.roll_min_node_info("o"))))
+                                        MATCH=Template(
+                                            "OPTIONAL MATCH (o:Individual)<-[r { type: 'Related' }]-(primary)"),
+                                        RETURN="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
+                                               "({ relation: %s, object: %s }) "
+                                               "END AS related_individuals " % (self.roll_min_edge_info("r"),
+                                                                                self.roll_min_node_info("o"))))
 
         channel_image_match = "<-[:depicts]-" \
                               "(channel:Individual)-[irw:in_register_with]->(template:Individual)-[:depicts]->" \
                               "(template_anat:Individual) WITH template, channel, template_anat, irw, $v %s limit 5 " \
                               "OPTIONAL MATCH (channel)-[:is_specified_output_of]->(technique:Class) "
 
+        self.template_domain = opm(
+            MATCH=Template(
+                "OPTIONAL MATCH (technique:Class)<-[:is_specified_output_of]"
+                "-(channel:Individual)"
+                "-[irw:in_register_with]->(template:Individual)-[:depicts]->(primary) "
+                "WHERE technique.label = 'computer graphic' "
+                "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
+                "UNWIND painted_domains AS pd "
+                "MATCH (channel:Individual { short_form: pd.channel.short_form})"
+                "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
+            RETURN="collect({ anatomical_type: %s ,"
+                   " anatomical_individual: %s, folder: pd.irw.folder, "
+                   "center: coalesce (pd.irw.center, []), index: [] + coalesce (pd.irw.index, []) }) AS template_domains" % (self.roll_min_node_info("c"),
+                                                                     self.roll_min_node_info("ai")),
+            var="template_domains")
+
+        self.template_channel = opm(
+            MATCH=Template(
+                "MATCH (channel:Individual)<-[irw:in_register_with]-"
+                "(channel:Individual)-[:depicts]->(primary)"),
+            RETURN="{ index: coalesce(irw.index, []) + [], extent: irw.extent, center: irw.center, voxel: irw.voxel, "
+                   "orientation: irw.orientation, image_folder: irw.folder, "
+                   "channel: %s } as template_channel" % self.roll_min_node_info("channel"),
+            var="template_channel")
+
         channel_image_return = "{ channel: %s, imaging_technique: %s," \
                                "image: { template_channel : %s, template_anatomy: %s," \
                                "image_folder: irw.folder, " \
-                               "index: coalesce(irw.index, 0) }}" % (self.roll_min_node_info('channel'),
-                                                                     self.roll_min_node_info('technique'),
-                                                                     self.roll_min_node_info('template'),
-                                                                     self.roll_min_node_info('template_anat'))
+                               "index: coalesce(irw.index, []) + [] }}" % (self.roll_min_node_info('channel'),
+                                                                           self.roll_min_node_info('technique'),
+                                                                           self.roll_min_node_info('template'),
+                                                                           self.roll_min_node_info('template_anat'))
 
         self.channel_image = opm(
             MATCH=Template("OPTIONAL MATCH (primary)" + channel_image_match % ''),
@@ -65,12 +94,14 @@ class QueryGenerator(object):
 
         self.anatomy_channel_image = opm(
             MATCH=Template(
-                "OPTIONAL MATCH (primary)<-[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)" + channel_image_match % ', i'), # Hacky sub!
-            RETURN="CASE WHEN channel IS NULL THEN [] ELSE COLLECT({ anatomy: %s, channel_image: %s }) END AS anatomy_channel_image " % (
-                self.roll_min_node_info("i"), channel_image_return),
+                "OPTIONAL MATCH (primary)<-[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)"
+                + channel_image_match % ', i'),  # Hacky sub!
+            RETURN="CASE WHEN channel IS NULL THEN [] ELSE COLLECT({ anatomy: %s, channel_image: %s }) " \
+                   "END AS anatomy_channel_image " % (
+                       self.roll_min_node_info("i"), channel_image_return),
             var="anatomy_channel_image")
 
-        self.term = "{ core: %s, description: primary.description, " \
+        self.term = "{ core: %s, description: coalesce(primary.description, []), " \
                     "comment: coalesce(primary.`annotation-comment`, [])} " \
                     "as term " % (self.roll_min_node_info("primary"))
 
@@ -87,7 +118,8 @@ class QueryGenerator(object):
                             var='def_pubs')
 
         self.pub_syn = opm(MATCH=Template("OPTIONAL MATCH (primary)-[rp:has_reference { typ: 'syn'}]->(p:pub) "),
-                           RETURN="CASE WHEN p is null THEN [] ELSE collect({ pub: %s, synonym: %s }) END AS pub_syn" % (pub_return, syn_return),
+                           RETURN="CASE WHEN p is null THEN [] ELSE collect({ pub: %s, synonym: %s }) END AS pub_syn"
+                                  % (pub_return, syn_return),
                            var='pub_syn')
 
         self.pub = opm(MATCH=Template("OPTIONAL MATCH (primary)-[rp:has_reference]->(p:pub) "),
@@ -98,15 +130,14 @@ class QueryGenerator(object):
                          "link: coalesce(ds.dataset_link, '')  }" % (self.roll_min_node_info('ds'))
 
         license_return = "{ core: %s, " \
-                          "icon: coalesce(l.license_logo, ''), link: coalesce(l.license_url, '')} " % (
-                           self.roll_min_node_info('l'))
+                         "icon: coalesce(l.license_logo, ''), link: coalesce(l.license_url, '')} " % (
+                             self.roll_min_node_info('l'))
 
         self.dataSet_license = opm(MATCH=Template("OPTIONAL MATCH (primary)-[:has_source]->(ds:DataSet)"
                                                   "-[:has_license]->(l:License)"),
                                    RETURN="COLLECT ({ dataset: %s, license: %s}) "
                                           "AS dataset_license" % (dataset_return, license_return),
                                    var='dataset_license')
-
 
         self.license = opm(MATCH=Template("OPTIONAL MATCH (primary)-[:has_license]->(l:License)"),
                            RETURN="collect (%s) as license" % license_return,
@@ -200,6 +231,19 @@ class QueryGenerator(object):
                                         self.xrefs,
                                         self.license,
                                         self.pub],
+                               pretty_print=pretty_print)
+
+    def template_query(self, short_form, pretty_print=False):
+        return self.roll_query(types=['Template'],
+                               short_form=short_form,
+                               clauses=[self.template_channel,
+                                        self.template_domain,
+                                        self.dataSet_license,
+                                        self.parents,
+                                        self.relationships,
+                                        self.xrefs,
+                                        self.related_individuals
+                                        ],
                                pretty_print=pretty_print)
 
 # Really need an edge property that distinguishes logical from annotation properties!

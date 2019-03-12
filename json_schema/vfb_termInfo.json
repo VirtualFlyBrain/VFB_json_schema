@@ -116,14 +116,20 @@
           "required": [
             "image_folder",
             "template_channel",
-            "template_anatomy"
+            "template_anatomy",
+            "index"
           ],
           "properties": {
             "image_folder": {
               "type": "string"
             },
             "index": {
-              "type": "integer"
+              "type": "array",
+              "items": {
+                "type": "integer"
+              },
+              "minItems": 0,
+              "maxItems": 1
             },
             "template_channel": {
               "type": "object",
@@ -158,6 +164,86 @@
         },
         "channel_image": {
           "$ref": "#/definitions/channel_image"
+        }
+      }
+    },
+    "domain": {
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "folder",
+        "anatomical_individual",
+        "anatomical_type"
+      ],
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "center": {
+          "type": "string"
+        },
+        "folder": {
+          "type": "string"
+        },
+        "anatomical_individual": {
+          "$ref": "#/definitions/minimal_entity_info"
+        },
+        "anatomical_type": {
+          "$ref": "#/definitions/minimal_entity_info"
+        }
+      }
+    },
+    "template_channel": {
+      "additionalProperties": false,
+      "required": [
+        "index"
+      ],
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 0,
+          "maxItems": 1
+        },
+        "center" : {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+          "minItems": 0,
+          "maxItems": 3
+        },
+        "extent" : {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+          "minItems": 0,
+          "maxItems": 3
+        },
+        "voxel" : {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+          "minItems": 0,
+          "maxItems": 3
+        },
+        "orientation" : {
+          "type": "string"
+        },
+        "image_folder" : {
+          "type": "string"
+        },
+        "channel": {
+          "$ref": "#/definitions/minimal_entity_info"
         }
       }
     },
@@ -392,7 +478,16 @@
       "items": {
         "$ref": "#/definitions/channel_image"
       }
-    }
+    },
+    "template_domains": {
+      "domains": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/domain"
+        }
+      }
+    },
+    "template_channel": { "$ref": "#/definitions/template_channel" }
   }
 }
 

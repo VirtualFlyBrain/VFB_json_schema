@@ -186,7 +186,24 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
+    def test_template(self):
+        query = self.qg.template_query(short_form="VFB_00017894", pretty_print=True)
+        r = self.qw.test(t=self,
+                         query=query)
 
+    def test_template_domains(self):
+        query = self.qg.roll_query(types=['Template'],
+                                   short_form='VFB_00017894',
+                                   clauses=[self.qg.template_domain])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_template_channel(self):
+        query = self.qg.roll_query(types=['Template'],
+                                   short_form='VFB_00017894',
+                                   clauses=[self.qg.template_channel])
+        r = self.qw.test(t=self,
+                         query=query)
 
 
     def tearDown(self):
