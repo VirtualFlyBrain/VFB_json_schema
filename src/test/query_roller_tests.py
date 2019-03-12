@@ -9,7 +9,7 @@ class test_wrapper():
 
     def __init__(self):
         self.V = get_validator("../../json_schema/vfb_termInfo.json")
-        self.nc = neo4j_connect('http://pdb-alpha.virtualflybrain.org', 'neo4j', 'neo4j')
+        self.nc = neo4j_connect('http://pdb.virtualflybrain.org', 'neo4j', 'neo4j')
 
 
     def test(self, t, query, single=True, print_result=True, print_query=True):
