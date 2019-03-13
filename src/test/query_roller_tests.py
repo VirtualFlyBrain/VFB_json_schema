@@ -4,12 +4,22 @@ from uk.ac.ebi.vfb.neo4j.neo4j_tools import neo4j_connect,results_2_dict_list
 from schema_test_suite import get_validator, validate
 import datetime
 import json
+import subprocess
+import os
 
 class test_wrapper():
 
     def __init__(self):
-        self.V = get_validator("../../json_schema/vfb_termInfo.json")
-        self.nc = neo4j_connect('http://pdb.virtualflybrain.org', 'neo4j', 'neo4j')
+
+        # This is all completely dependent on repo structure!
+        # Ideally it would be configured by passing path as arg
+        # But passing args doesn't work reliably with unittest lib.
+
+        pwdl = os.getcwd().split('/')
+        base = 'file://' + '/'.join(pwdl[0:-2]) + '/json_schema/'
+        self.V = get_validator("../../json_schema/vfb_termInfo.json",
+                               base_uri=base)
+        self.nc = neo4j_connect('http://localhost:7475', 'neo4j', 'neo4j')
 
 
     def test(self, t, query, single=True, print_result=True, print_query=True):

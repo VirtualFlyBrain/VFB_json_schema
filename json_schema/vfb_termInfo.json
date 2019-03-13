@@ -3,413 +3,6 @@
   "title": "VFB Term Information metadata schema.",
   "description": "A JSON schema for use in the VFB API and as a web-facing intermediate layer between VFB neo4j/OWL endpoints and the web.",
   "name": "vfb_terminfo",
-  "definitions": {
-    "minimal_entity_info": {
-      "type": "object",
-      "required": [
-        "short_form",
-        "iri",
-        "label",
-        "types"
-      ],
-      "properties": {
-        "short_form": {
-          "type": "string"
-        },
-        "iri": {
-          "type": "string"
-        },
-        "label": {
-          "description": "rdfs:label",
-          "type": "string"
-        },
-        "types": {
-          "description": "A list of term types, corresponding to neo4j:labels in the VFB production database and to the gross typing system used by VFB: Geppetto.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "minimal_edge_info": {
-      "type": "object",
-      "required": [
-        "iri",
-        "label",
-        "type"
-      ],
-      "properties": {
-        "short_form": {
-          "type": "string"
-        },
-        "iri": {
-          "type": "string"
-        },
-        "label": {
-          "description": "rdfs:label",
-          "type": "string"
-        },
-        "type": {
-          "description": "Neo4J edge type",
-          "type": "string"
-        }
-      }
-    },
-    "term": {
-      "additionalProperties": false,
-      "required": [
-        "core"
-      ],
-      "type": "object",
-      "properties": {
-        "core": {
-          "type": "object",
-          "$ref": "#/definitions/minimal_entity_info"
-        },
-        "description": {
-          "description": "A string describing or defining an entity. This field is an array, allowing for multiple descriptions, but only one is typically expected.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "comment": {
-          "description": "rdfs:comment.  This field is an array, allowing for multiple descriptions, but only one is typically expected.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "rel": {
-      "type": "object",
-      "additionalProperties": false,
-      "Required": [
-        "relation",
-        "object"
-      ],
-      "properties": {
-        "relation": {
-          "type": "object",
-          "$ref": "#/definitions/minimal_edge_info"
-        },
-        "object": {
-          "type": "object",
-          "$ref": "#/definitions/minimal_entity_info"
-        }
-      }
-    },
-    "channel_image": {
-      "additionalProperties": false,
-      "required": [
-        "image",
-        "channel",
-        "imaging_technique"
-      ],
-      "type": "object",
-      "properties": {
-        "image": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "image_folder",
-            "template_channel",
-            "template_anatomy",
-            "index"
-          ],
-          "properties": {
-            "image_folder": {
-              "type": "string"
-            },
-            "index": {
-              "type": "array",
-              "items": {
-                "type": "integer"
-              },
-              "minItems": 0,
-              "maxItems": 1
-            },
-            "template_channel": {
-              "type": "object",
-              "$ref": "#/definitions/minimal_entity_info"
-            },
-            "template_anatomy": {
-              "type": "object",
-              "$ref": "#/definitions/minimal_entity_info"
-            }
-          }
-        },
-        "channel": {
-          "type": "object",
-          "$ref": "#/definitions/minimal_entity_info"
-        },
-        "imaging_technique": {
-          "type": "object",
-          "$ref": "#/definitions/minimal_entity_info"
-        }
-      }
-    },
-    "anatomy_channel_image": {
-      "additionalProperties": false,
-      "required": [
-        "anatomy",
-        "channel_image"
-      ],
-      "type": "object",
-      "properties": {
-        "anatomy": {
-          "$ref": "#/definitions/minimal_entity_info"
-        },
-        "channel_image": {
-          "$ref": "#/definitions/channel_image"
-        }
-      }
-    },
-    "domain": {
-      "additionalProperties": false,
-      "required": [
-        "index",
-        "folder",
-        "anatomical_individual",
-        "anatomical_type"
-      ],
-      "type": "object",
-      "properties": {
-        "index": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
-        },
-        "center": {
-          "type": "string"
-        },
-        "folder": {
-          "type": "string"
-        },
-        "anatomical_individual": {
-          "$ref": "#/definitions/minimal_entity_info"
-        },
-        "anatomical_type": {
-          "$ref": "#/definitions/minimal_entity_info"
-        }
-      }
-    },
-    "template_channel": {
-      "additionalProperties": false,
-      "required": [
-        "index"
-      ],
-      "type": "object",
-      "properties": {
-        "index": {
-          "type": "array",
-          "items": {
-            "type": "integer"
-          },
-          "minItems": 0,
-          "maxItems": 1
-        },
-        "center" : {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
-          "minItems": 0,
-          "maxItems": 3
-        },
-        "extent" : {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
-          "minItems": 0,
-          "maxItems": 3
-        },
-        "voxel" : {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
-          "minItems": 0,
-          "maxItems": 3
-        },
-        "orientation" : {
-          "type": "string"
-        },
-        "image_folder" : {
-          "type": "string"
-        },
-        "channel": {
-          "$ref": "#/definitions/minimal_entity_info"
-        }
-      }
-    },
-    "xref": {
-      "additionalProperties": false,
-      "required": [
-        "link",
-        "link_text",
-        "site"
-      ],
-      "type": "object",
-      "properties": {
-        "link": {
-          "description": "A URL linking to some third party site.",
-          "type": "string"
-        },
-        "link_text": {
-          "description": "The label string to use for the link.",
-          "type": "string"
-        },
-        "icon": {
-          "description": "A link to an icon to display for the third party site.",
-          "type": "string"
-        },
-        "site": {
-          "description": "Minimal information about at third party site",
-          "type": "object",
-          "$ref": "#/definitions/minimal_entity_info"
-        }
-      }
-    },
-    "dataset": {
-      "additionalProperties": false,
-      "type": "object",
-      "required": [
-        "core"
-      ],
-      "properties": {
-        "core": {
-          "type": "object",
-          "$ref": "#/definitions/minimal_entity_info"
-        },
-        "link": {
-          "description": "A URL linking to some third party site.",
-          "type": "string"
-        },
-        "icon": {
-          "description": "A link to an icon to display for the third party site.",
-          "type": "string"
-        },
-        "catmaid_annotation_id": {
-          "description": "ID in CATMAID server",
-          "type": "string"
-        }
-      }
-    },
-    "license": {
-      "schema_comment": "re-use core?",
-      "additionalProperties": false,
-      "type": "object",
-      "required": [
-        "core"
-      ],
-      "properties": {
-        "core": {
-          "type": "object",
-          "$ref": "#/definitions/minimal_entity_info"
-        },
-        "link": {
-          "description": "A URL linking to a license.",
-          "type": "string"
-        },
-        "icon": {
-          "description": "A link to an icon to display for the license.",
-          "type": "string"
-        },
-        "is_bespoke": {
-          "type": "boolean"
-        }
-      }
-    },
-    "dataset_license": {
-      "additionalProperties": false,
-      "required": [
-        "dataset",
-        "license"
-      ],
-      "type": "object",
-      "properties": {
-        "dataset": {
-          "$ref": "#/definitions/dataset"
-        },
-        "license": {
-          "$ref": "#/definitions/license"
-        }
-      }
-    },
-    "pub": {
-      "additionalProperties": false,
-      "required": [
-        "core"
-      ],
-      "schema_comment": "Better to model links as xrefs?",
-      "type": "object",
-      "properties": {
-        "core": {
-          "type": "object",
-          "$ref": "#/definitions/minimal_entity_info"
-        },
-        "microref": {
-          "description": "A minimal reference text for use in display where space is limited. For single authors: Ghysen, 1998; For multiple authors Ghysen et al., 1986",
-          "type": "string"
-        },
-        "PubMed": {
-          "type": "string"
-        },
-        "FlyBase": {
-          "type": "string"
-        },
-        "DOI": {
-          "type": "string"
-        },
-        "ISBN": {
-          "type": "string"
-        }
-      }
-    },
-    "synonym": {
-      "additionalProperties": false,
-      "required": [
-        "label"
-      ],
-      "type": "object",
-      "properties": {
-        "label": {
-          "description": "label string",
-          "type": "string"
-        },
-        "scope": {
-          "description": "OBO-style synonym scoping.",
-          "type": "string"
-        },
-        "type": {
-          "type": "string"
-        }
-      }
-    },
-    "pub_syn": {
-      "type": "object",
-      "additional_properties": false,
-      "required": [
-        "synonym",
-        "pub"
-      ],
-      "properties": {
-        "synonym": {
-          "type": "object",
-          "$ref": "#/definitions/synonym"
-        },
-        "pub": {
-          "type": "object",
-          "$ref": "#/definitions/pub"
-        }
-      }
-    }
-  },
   "additionalProperties": false,
   "required": [
     "term"
@@ -417,77 +10,77 @@
   "type": "object",
   "properties": {
     "term": {
-      "$ref": "#/definitions/term"
+      "$ref": "mod.json#definitions/term"
     },
     "anatomy_channel_image": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/anatomy_channel_image"
+        "$ref": "mod.json#definitions/anatomy_channel_image"
       }
     },
     "xrefs": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/xref"
+        "$ref": "mod.json#definitions/xref"
       }
     },
     "pub_syn": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/pub_syn"
+        "$ref": "mod.json#definitions/pub_syn"
       }
     },
     "def_pubs": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/pub"
+        "$ref": "mod.json#definitions/pub"
       }
     },
     "license": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/license"
+        "$ref": "mod.json#definitions/license"
       }
     },
     "dataset_license": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/dataset_license"
+        "$ref": "mod.json#definitions/dataset_license"
       }
     },
     "relationships": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/rel"
+        "$ref": "mod.json#definitions/rel"
       }
     },
     "related_individuals": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/rel"
+        "$ref": "mod.json#definitions/rel"
       }
     },
     "parents": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/minimal_entity_info"
+        "$ref": "mod.json#definitions/minimal_entity_info"
       }
     },
     "channel_image": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/channel_image"
+        "$ref": "mod.json#definitions/channel_image"
       }
     },
     "template_domains": {
       "domains": {
         "type": "array",
         "items": {
-          "$ref": "#/definitions/domain"
+          "$ref": "mod.json#definitions/domain"
         }
       }
     },
-    "template_channel": { "$ref": "#/definitions/template_channel" }
+    "template_channel": { "$ref": "mod.json#definitions/template_channel" }
   }
 }
 
