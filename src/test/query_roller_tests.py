@@ -19,7 +19,7 @@ class test_wrapper():
         base = 'file://' + '/'.join(pwdl[0:-2]) + '/json_schema/'
         self.V = get_validator("../../json_schema/vfb_termInfo.json",
                                base_uri=base)
-        self.nc = neo4j_connect('http://localhost:7475', 'neo4j', 'neo4j')
+        self.nc = neo4j_connect('http://pdb.virtualflybrain.org', 'neo4j', 'neo4j')
 
 
     def test(self, t, query, single=True, print_result=True, print_query=True):
