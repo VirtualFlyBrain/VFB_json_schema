@@ -3,12 +3,9 @@
   "description": "A JSON schema for use in the VFB API and as a web-facing intermediate layer between VFB neo4j/OWL endpoints and the web.",
   "name": "vfb_terminfo",
   "additionalProperties": false,
-  "required": [
-    ""
-  ],
   "type": "object",
   "definitions": {
-    "result": {},
+    "result": {}
   },
   "properties": {
     "results": {
