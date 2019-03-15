@@ -1,0 +1,20 @@
+{ "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "VFB Term Information metadata schema.",
+  "description": "A JSON schema for use in the VFB API and as a web-facing intermediate layer between VFB neo4j/OWL endpoints and the web.",
+  "name": "vfb_terminfo",
+  "additionalProperties": false,
+  "required": [
+    ""
+  ],
+  "type": "object",
+  "definitions": {
+    "result": {},
+  },
+  "properties": {
+    "results": {
+      "type": "array",
+      "items": { "$ref": "definitions#result"}
+    }
+  }
+
+}

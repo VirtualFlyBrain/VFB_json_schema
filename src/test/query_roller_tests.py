@@ -1,15 +1,15 @@
 import unittest
-from query_roller import QueryGenerator
-from uk.ac.ebi.vfb.neo4j.neo4j_tools import neo4j_connect,results_2_dict_list
+from query_roller import QueryLibrary, query_builder
+from uk.ac.ebi.vfb.neo4j.neo4j_tools import neo4j_connect, results_2_dict_list
 from schema_test_suite import get_validator, validate
 import datetime
 import json
-import subprocess
 import os
 
-class test_wrapper():
 
-    def __init__(self):
+class TestWrapper:
+
+    def __init__(self, schema):
 
         # This is all completely dependent on repo structure!
         # Ideally it would be configured by passing path as arg
@@ -17,10 +17,9 @@ class test_wrapper():
 
         pwdl = os.getcwd().split('/')
         base = 'file://' + '/'.join(pwdl[0:-2]) + '/json_schema/'
-        self.V = get_validator("../../json_schema/vfb_termInfo.json",
+        self.V = get_validator("../../json_schema/" + schema,
                                base_uri=base)
         self.nc = neo4j_connect('http://pdb.virtualflybrain.org', 'neo4j', 'neo4j')
-
 
     def test(self, t, query, single=True, print_result=True, print_query=True):
 
@@ -51,173 +50,202 @@ class test_wrapper():
             return False
 
 
-class QueryRollerTest(unittest.TestCase):
+class TermInfoRollerTest(unittest.TestCase):
 
     def setUp(self):
-        self.qg = QueryGenerator()
-        self.qw = test_wrapper()
+        self.ql = QueryLibrary()
+        self.qw = TestWrapper('vfb_terminfo.json')
         print("Running", self.id().split('.')[1:])
 
-
-
     def test_class_term(self):
-        query = self.qg.roll_query(types=["Class"],
-                                   clauses=[],
-                                   short_form='FBbt_00007422')
+        query = query_builder(query_labels=["Class"],
+                              clauses=[self.ql.term()],
+                              query_short_forms=['FBbt_00007422'])
         r = self.qw.test(t=self,
                          query=query)
 
-
     def test_individual_term(self):
-        query = self.qg.roll_query(types=["Individual"],
-                                   clauses=[],
-                                   short_form='VFB_00011179')
+        query = query_builder(query_labels=["Individual"],
+                              clauses=[self.ql.term()],
+                              query_short_forms=['VFB_00011179'])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_class_images(self):
-
-        query = self.qg.roll_query(types=["Class"],
-                                   clauses=[self.qg.anatomy_channel_image],
-                                   short_form='FBbt_00007422')
+        query = query_builder(query_labels=["Class"],
+                              clauses=[self.ql.term(),
+                                       self.ql.anatomy_channel_image()],
+                              query_short_forms=['FBbt_00007422'])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_class_xrefs(self):
-        query = self.qg.roll_query(types=["Class"],
-                                   clauses=[self.qg.xrefs],
-                                   short_form='FBbt_00007422')
+        query = query_builder(query_labels=["Class"],
+                              clauses=[self.ql.term(), 
+                                       self.ql.xrefs()],
+                              query_short_forms=['FBbt_00007422'])
         r = self.qw.test(t=self,
                          query=query)
 
-
     def test_class_parents(self):
-        query = self.qg.roll_query(types=["Class"],
-                                   clauses=[self.qg.parents],
-                                   short_form='FBbt_00007422')
+        query = query_builder(query_labels=["Class"],
+                              clauses=[self.ql.term(), 
+                                       self.ql.parents()],
+                              query_short_forms=['FBbt_00007422'])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_class_relationships(self):
-        query = self.qg.roll_query(types=["Class"],
-                                   clauses=[self.qg.relationships],
-                                   short_form='FBbt_00007422')
+        query = query_builder(query_labels=["Class"],
+                              clauses=[self.ql.term(),
+                                       self.ql.relationships()],
+                              query_short_forms=['FBbt_00007422'])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_class_def_pubs(self):
-        query = self.qg.roll_query(types=["Class"],
-                                   clauses=[self.qg.def_pubs],
-                                   short_form='FBbt_00000591')
+        query = query_builder(query_labels=["Class"],
+                              clauses=[self.ql.term(),
+                                       self.ql.def_pubs()],
+                              query_short_forms=['FBbt_00000591'])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_class_pub_syn(self):
-        query = self.qg.roll_query(types=["Class"],
-                                   clauses=[self.qg.pub_syn],
-                                   short_form='FBbt_00000591')
+        query = query_builder(query_labels=["Class"],
+                              clauses=[self.ql.term(),
+                                       self.ql.pub_syn()],
+                              query_short_forms=['FBbt_00000591'])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_individual_relationships(self):
-        query = self.qg.roll_query(types=["Individual"],
-                                   clauses=[self.qg.relationships],
-                                   short_form='VFB_00011179')
+        query = query_builder(query_labels=["Individual"],
+                              clauses=[self.ql.term(),
+                                       self.ql.relationships()],
+                              query_short_forms=['VFB_00011179'])
         r = self.qw.test(t=self,
                          query=query)
 
-
     def test_individual_parents(self):
-        query = self.qg.roll_query(types=["Individual"],
-                                   clauses=[self.qg.parents],
-                                   short_form='VFB_00011179')
+        query = query_builder(query_labels=["Individual"],
+                              clauses=[self.ql.term(),
+                                       self.ql.parents()],
+                              query_short_forms=['VFB_00011179'])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_individual_xrefs(self):
-        query = self.qg.roll_query(types=["Individual"],
-                                   clauses=[self.qg.xrefs],
-                                   short_form='VFB_00020249')
+        query = query_builder(query_labels=["Individual"],
+                              clauses=[self.ql.term(),
+                                       self.ql.xrefs()],
+                              query_short_forms=['VFB_00020249'])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_individual_image(self):
-        query = self.qg.roll_query(types=["Individual"],
-                                   clauses=[self.qg.channel_image],
-                                   short_form='VFB_00011179')
+        query = query_builder(query_labels=["Individual"],
+                              clauses=[self.ql.term(),
+                                       self.ql.channel_image()],
+                              query_short_forms=['VFB_00011179'])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_individual_dataset_license(self):
-        query = self.qg.roll_query(types=["Individual"],
-                                   clauses=[self.qg.dataSet_license],
-                                   short_form='VFB_00011179')
+        query = query_builder(query_labels=["Individual"],
+                              clauses=[self.ql.term(),
+                                       self.ql.dataSet_license()],
+                              query_short_forms=['VFB_00011179'])
         r = self.qw.test(t=self,
                          query=query)
-
 
     def test_class(self):
-        query = self.qg.class_query(short_form='FBbt_00007422')
+        query = self.ql.class_query(short_form='FBbt_00007422')
         r = self.qw.test(t=self,
                          query=query)
-
 
     def test_individual(self):
-        query = self.qg.anatomical_ind_query(short_form='VFB_00011179')
+        query = self.ql.anatomical_ind_query(short_form='VFB_00011179')
         r = self.qw.test(t=self,
                          query=query)
 
-
     def test_dataset_license(self):
-        query = self.qg.roll_query(types = ['DataSet'],
-                                   short_form='Ito2013',
-                                   clauses=[self.qg.license])
+        query = query_builder(query_labels=['DataSet'],
+                              query_short_forms=['Ito2013'],
+                              clauses=[self.ql.term(),
+                                       self.ql.license()])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_dataset_xrefs(self):
-        query = self.qg.roll_query(types = ['DataSet'],
-                                   short_form='Ito2013',
-                                   clauses=[self.qg.xrefs])
+        query = query_builder(query_labels=['DataSet'],
+                              query_short_forms=['Ito2013'],
+                              clauses=[self.ql.term(),
+                                       self.ql.xrefs()])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_dataset_pub(self):
-        query = self.qg.roll_query(types = ['DataSet'],
-                                   short_form='Ito2013',
-                                   clauses=[self.qg.pub])
+        query = query_builder(query_labels=['DataSet'],
+                              query_short_forms=['Ito2013'],
+                              clauses=[self.ql.term(),
+                                       self.ql.pub()])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_dataset_anatomy_channel_image(self):
-        query = self.qg.roll_query(types = ['DataSet'],
-                                   short_form='Ito2013',
-                                   clauses=[self.qg.anatomy_channel_image])
+        query = query_builder(query_labels=['DataSet'],
+                              query_short_forms=['Ito2013'],
+                              clauses=[self.ql.term(),
+                                       self.ql.anatomy_channel_image()])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_template(self):
-        query = self.qg.template_query(short_form="VFB_00017894", pretty_print=True)
+        query = self.ql.template_query(short_form="VFB_00017894", pretty_print=True)
         r = self.qw.test(t=self,
                          query=query)
 
     def test_template_domains(self):
-        query = self.qg.roll_query(types=['Template'],
-                                   short_form='VFB_00017894',
-                                   clauses=[self.qg.template_domain])
+        query = query_builder(query_labels=['Template'],
+                              query_short_forms=['VFB_00017894'],
+                              clauses=[self.ql.term(),
+                                       self.ql.template_domain()])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_template_channel(self):
-        query = self.qg.roll_query(types=['Template'],
-                                   short_form='VFB_00017894',
-                                   clauses=[self.qg.template_channel])
+        query = query_builder(query_labels=['Template'],
+                              query_short_forms=['VFB_00017894'],
+                              clauses=[self.ql.term(),
+                                       self.ql.template_channel()])
         r = self.qw.test(t=self,
                          query=query)
 
-
     def tearDown(self):
         return
+
+
+class QueryRollerTest(unittest.TestCase):
+
+    def setUp(self):
+        self.ql = QueryLibrary()
+        self.qw = TestWrapper('vfb_query.json')
+        print("Running", self.id().split('.')[1:])
+
+
+    def test_anat_2_ep_query(self):
+        query= self.ql.anat_2_ep_query(short_forms=["FBbt_00050101", "FBbt_00050253", "FBbt_00050143", "FBbt_00050167", "FBbt_00110412", "FBbt_00100218", "FBbt_00003638", "FBbt_00003662", "FBbt_00003641", "FBbt_00003639", "FBbt_00110325", "FBbt_00111506", "FBbt_00111052", "FBbt_00111507", "FBbt_00111508", "FBbt_00111053", "FBbt_00111509", "FBbt_00111510", "FBbt_00111055", "FBbt_00111054", "FBbt_00040033", "FBbt_00110151", "FBbt_00003646", "FBbt_00003643", "FBbt_00110326", "FBbt_00007566", "FBbt_00007565", "FBbt_00007564", "FBbt_00007563", "FBbt_00007562", "FBbt_00007561", "FBbt_00007560", "FBbt_00007559", "FBbt_00003634"], pretty_print=True)
+
+#       r = self.qw.test(t=self,
+#                     query=query)
+
+    def test_ep_2_anat_query(self):
+        query= self.ql.ep_2_anat_query('VFBexp_FBtp0040533',
+                                       pretty_print=True)
+
+ #       r = self.qw.test(t=self,
+ #                    query=query)
 
 
 if __name__ == '__main__':
