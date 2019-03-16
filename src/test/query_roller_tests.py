@@ -14,7 +14,7 @@ class TestWrapper:
         # This is all completely dependent on repo structure!
         # Ideally it would be configured by passing path as arg
         # But passing args doesn't work reliably with unittest lib.
-
+        print(os.getcwd())
         pwdl = os.getcwd().split('/')
         base = 'file://' + '/'.join(pwdl[0:-2]) + '/json_schema/'
         self.V = get_validator("../../json_schema/" + schema,
