@@ -14,4 +14,6 @@ before_script:
 script:
   - export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
   - cd src/test
-  - python query_roller_tests.py
+  - python results_schema_tests.py
+  - python TermInfo_schema_tests.py
+
