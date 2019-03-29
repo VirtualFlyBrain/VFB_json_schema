@@ -3,16 +3,42 @@ from typing import List
 from string import Template
 
 
-## Spec:
-
-## First clause is always a match on one or more short_forms - so we need a way to sub these.
-## First clause may include passed neo labels - so we need a way to sub these.
-## First clause WITH will include at least one node var
-
 
 @dataclass
 class Clause:
-    MATCH: Template
+    """Specifies a single cypher clause (MATCH + WITH/RETURN values + variables
+    to be carried over in subsequent clause.)
+    Conventions:
+        1. First clause is a MATCH statement returning one or more nodes specified by
+        a combination of neo4j labels specified in `starting labels`
+        with a short_form in `starting_short_forms`, bound to the variable 'primary'
+        (default specification of pvar).  This should have a return statement specifying how
+        primary should be unpacked into a datastructures in  the return statement.
+        2. Subsequent clauses are OPTIONAL MATCH statements, they may return a
+        3. Any MATCH statement my consist of multiple whole cypher clauses (MATCH  + WITH)
+          In this case, each internal WITH clause must have a $v for interpolation of
+          accumulated vars
+
+    MATCH: A cypher (OPTIONAL) MATCH clause. This must be a Template instance.
+    It *may* contain references to interpolation vars, specified by clause attributes:
+        $labels: starting_label of primary matched term. By convention, used only in first clause;
+        $pvar: pvar;
+        $ssf: starting short forms
+        $v: vars
+    WITH: A cypher string that converts variable output of the MATCH
+          statement into one or more data structures (strings, lists or maps),
+          each bound to a variable name.  These variable names must be
+          referenced in vars.
+    vars: a list of variable names for data structures in with statement.
+          These will be interpolated into subsequent clauses and the return statement
+    node_vars: a list of variables returned by the MATCH statement,
+              referring to whole nodes, to be interpolated
+               into subsequent clauses.
+    RETURN: A cypher string that converts variables referenced in node_vars
+    into a data structures in the final return statement of the generated cypher query,
+    """
+
+    MATCH: Template  # Should probably make this a string and refactor to make Template object inside function.
     WITH: str
     vars: List[str] = field(default_factory=list)
     RETURN: str = ''
@@ -22,6 +48,8 @@ class Clause:
     pvar: str = 'primary'
 
     def get_clause(self, varz, pretty_print=True):
+        """Generate a cypher string using the attributes of this clause object,
+        interpolating a list of variables specified by the varz arg"""
         sep = ' '
         if pretty_print:
             sep = ' \n'
@@ -38,8 +66,8 @@ class Clause:
 
 def query_builder(clauses: List[Clause], query_short_forms=None,
                   query_labels=None, pretty_print=True):
-    """clauses: A list of Clause object. The first element in the list must be an initial clause.
-    Initial clauses must have slot for short_forms indicated with ** """
+    """clauses: A list of Clause objects. The first element in the list must be an initial clause.
+    Initial clauses must have slot for short_forms """
 
     if not query_labels:
         query_labels = []  # Set to some default for no var.
@@ -63,7 +91,7 @@ def query_builder(clauses: List[Clause], query_short_forms=None,
         if c.RETURN:
             return_clauses.append(c.RETURN)
 
-        # Add in some checks to make sure vars don't get stomped
+        # TODO: Add in some checks to make sure vars don't get stomped
 
     return_clause = "RETURN " + ', '.join(return_clauses + data_vars)
     out.append(return_clause)
@@ -124,7 +152,7 @@ class QueryLibrary:
         self._pub_return = "{ core: %s, " \
                            "PubMed: coalesce(p.PMID, ''), " \
                            "FlyBase: coalesce(p.FlyBase, ''), DOI: coalesce(p.DOI, '') } " \
-                           "" % roll_min_node_info("p")  # Draft
+                           "" % roll_min_node_info("p")
 
         self._syn_return = "{ label: coalesce(rp.synonym, ''), " \
                            "scope: coalesce(rp.scope, ''), type: coalesce(rp.cat,'') } "
@@ -137,6 +165,7 @@ class QueryLibrary:
             RETURN="{ core: %s, description: coalesce(primary.description, []), " \
                    "comment: coalesce(primary.`annotation-comment`, [])} " \
                    "AS term" % (roll_min_node_info("primary")))
+
 
     def anat_2_ep_wrapper(self):
         return Clause(

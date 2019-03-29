@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "VFB query results metadata schema.",
+  "description": "A JSON schema for use in the VFB API and as a web-facing intermediate layer between VFB neo4j/OWL endpoints and the web.",
+  "name": "vfb_terminfo",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "anatomy": {
+      "$ref": "mod.json#definitions/minimal_entity_info"
+    },
+    "pub": {
+      "$ref": "mod.json#definitions/pub"
+    },
+    "anatomy_channel_image": {
+      "type": "array",
+      "items": {
+        "$ref": "mod.json#definitions/anatomy_channel_image"
+      }
+    },
+    "stages": {
+      "type": "array",
+      "items": {
+        "$ref": "mod.json#definitions/minimal_entity_info"
+      }
+    },
+    "expression_pattern": {
+      "$ref": "mod.json#definitions/minimal_entity_info"
+    },
+    "expressed_in": {
+      "type": "array",
+      "items": {
+        "$ref": "mod.json#definitions/anatomy_channel_image"
+      }
+    },
+    "pubs": {
+      "type": "array",
+      "items": {
+        "$ref": "mod.json#definitions/pub"
+      }
+    }
+  }
+}
