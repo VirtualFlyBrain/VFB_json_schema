@@ -13,7 +13,7 @@ before_script:
 
 script:
   - export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
-  - cd src/test
-  - python results_schema_tests.py
-  - python TermInfo_schema_tests.py
+  - cd src
+  - python -m vfb_query_builder.tests.results_schema_tests
+  - python -m vfb_query_builder.tests.TermInfo_schema_tests
 
