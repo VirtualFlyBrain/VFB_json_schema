@@ -1,5 +1,5 @@
 import unittest
-from query_roller import QueryLibrary, query_builder
+from vfb_query_builder.query_roller import QueryLibrary, query_builder
 from .test_tools import TestWrapper
 
 

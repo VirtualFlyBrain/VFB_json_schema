@@ -3,7 +3,6 @@ from typing import List
 from string import Template
 
 
-
 @dataclass
 class Clause:
     """Specifies a single cypher clause (MATCH + WITH/RETURN values + variables
@@ -35,7 +34,7 @@ class Clause:
               referring to whole nodes, to be interpolated
                into subsequent clauses.
     RETURN: A cypher string that converts variables referenced in node_vars
-    into a data structures in the final return statement of the generated cypher query,
+    into a data structure in the final return statement of the generated cypher query.
     """
 
     MATCH: Template  # Should probably make this a string and refactor to make Template object inside function.
@@ -101,7 +100,7 @@ def query_builder(clauses: List[Clause], query_short_forms=None,
 def roll_min_node_info(var):
     """Rolls core JSON (specifying minimal info about an entity.
     var: the variable name for the entity within this cypher clause."""
-    return "{ short_form: %s.short_form, label: %s.label, " \
+    return "{ short_form: %s.short_form, label: coalesce(%s.label,''), " \
            "iri: %s.iri, types: labels(%s) } " % (var, var, var, var)
 
 
@@ -121,6 +120,8 @@ def roll_pub_return(var):
 
 class QueryLibrary:
 
+    # Using class to wrap for convenience. Could do the same with a set of static methods.
+
     def __init__(self):
         self._dataset_return = "{ core: %s, catmaid_annotation_id: " \
                                "coalesce(ds.catmaid_annotation_id, ''), " \
@@ -132,30 +133,11 @@ class QueryLibrary:
                                "link: coalesce(l.license_url, '')} " % (
                                    roll_min_node_info('l'))
 
-        self._channel_image_match = "<-[:depicts]-" \
-                                    "(channel:Individual)-[irw:in_register_with]" \
-                                    "->(template:Individual)-[:depicts]->" \
-                                    "(template_anat:Individual) WITH template" \
-                                    ", channel, template_anat, irw, $v %s limit 5 " \
-                                    "OPTIONAL MATCH (channel)-[:is_specified_output_of" \
-                                    "]->(technique:Class) "
-
-        self._channel_image_return = "{ channel: %s, imaging_technique: %s," \
-                                     "image: { template_channel : %s, template_anatomy: %s," \
-                                     "image_folder: irw.folder, " \
-                                     "index: coalesce(irw.index, []) + [] }" \
-                                     "}" % (roll_min_node_info('channel'),
-                                            roll_min_node_info('technique'),
-                                            roll_min_node_info('template'),
-                                            roll_min_node_info('template_anat'))
-
-        self._pub_return = "{ core: %s, " \
-                           "PubMed: coalesce(p.PMID, ''), " \
-                           "FlyBase: coalesce(p.FlyBase, ''), DOI: coalesce(p.DOI, '') } " \
-                           "" % roll_min_node_info("p")
-
-        self._syn_return = "{ label: coalesce(rp.synonym, ''), " \
-                           "scope: coalesce(rp.scope, ''), type: coalesce(rp.cat,'') } "
+#        self._channel_image_return = ''
+        self._set_image_query_common_elements()
+#        self._pub_return = ''
+#        self._syn_return = ''
+        self._set_pub_common_query_elements()
 
     def term(self):
         return Clause(
@@ -166,24 +148,25 @@ class QueryLibrary:
                    "comment: coalesce(primary.`annotation-comment`, [])} " \
                    "AS term" % (roll_min_node_info("primary")))
 
+    # EXPRESSION QUERIES
 
     def anat_2_ep_wrapper(self):
         return Clause(
             MATCH=Template("MATCH (ep$labels)<-[ar:overlaps|part_of]-(:Individual)"
                            "-[:INSTANCEOF]->(anat:Class) WHERE anat.short_form in $ssf "
-                           "WITH DISTINCT collect(ar.pub) as pubs, anat "
+                           "WITH DISTINCT collect(ar.pub) as pubs, anat, ep "
                            "UNWIND pubs as p MATCH (pub:pub { short_form: p}) "),
-            WITH="anat, collect(%s) as pns" % roll_pub_return("pub"),
-            vars=['pns'],
-            node_vars=['anat'],
-            RETURN='%s as anatomy' % roll_min_node_info('anat'))
+            WITH="anat, ep, collect(%s) as pubs" % roll_pub_return("pub"),
+            vars=['pubs'],
+            node_vars=['anat', 'ep'],
+            RETURN='%s as anatomy, %s AS expression_pattern' % (roll_min_node_info('anat'), roll_min_node_info('ep')))
 
     def ep_2_anat_wrapper(self):
         return Clause(
             MATCH=Template("MATCH (ep:Expression_pattern)-[ar:overlaps|has_part]"
-                           "-(i:Individual)-[:INSTANCEOF]->(a:Class)"
+                           "-(i:Individual)-[:INSTANCEOF]->(a:Class) WHERE ep.class in $ssf"
                            "WITH  i, a, ep, er "
-                           "OPTIONAL MATCH (p:pub { short_form: ar.pub}) ") ,
+                           "OPTIONAL MATCH (p:pub { short_form: ar.pub}) "),
             WITH="i, ep, %s as anat, %s as pub" % (roll_min_node_info('anat'), roll_pub_return("pub")),
             vars=['anat', 'pub'],
             node_vars=['i', 'ep'],
@@ -196,9 +179,7 @@ class QueryLibrary:
             WITH="collect({ term: %s, rel: %s } AS "
         )
 
-
-
-
+    # XREFS
 
     def xrefs(self):  return Clause(
         MATCH=Template("OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-($pvar) "),
@@ -207,65 +188,62 @@ class QueryLibrary:
              "site: %s, icon: coalesce(s.link_icon_url, '') }) END AS xrefs" % roll_min_node_info("s"),
         vars=["xrefs"])
 
+    # RELATIONSHIPS
+
     def parents(self):  return Clause(vars=["parents"],
                                       MATCH=Template("OPTIONAL MATCH (o:Class)"
                                                      "<-[r:SUBCLASSOF|INSTANCEOF]-($pvar) "),
                                       WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
                                            "(%s) END AS parents " % roll_min_node_info("o"))  # Draft
 
-    def relationships(self): return  (Clause(vars=["relationships"],
-                                      MATCH=Template("OPTIONAL MATCH "
-                                                     "(o)<-[r {type:'Related'}]-($pvar)"),
-                                      WITH="CASE WHEN o IS NULL THEN [] "
-                                           "ELSE COLLECT ({ relation: %s, object: %s }) "
-                                           "END AS relationships " % (roll_min_edge_info("r"),
-                                                                      roll_min_node_info("o"))))
+    def relationships(self): return (Clause(vars=["relationships"],
+                                            MATCH=Template("OPTIONAL MATCH "
+                                                           "(o)<-[r {type:'Related'}]-($pvar)"),
+                                            WITH="CASE WHEN o IS NULL THEN [] "
+                                                 "ELSE COLLECT ({ relation: %s, object: %s }) "
+                                                 "END AS relationships " % (roll_min_edge_info("r"),
+                                                                            roll_min_node_info("o"))))
 
-    def related_individuals(self): return  (Clause(vars=["related_individuals"],
-                                            MATCH=Template(
-                                                "OPTIONAL MATCH "
-                                                "(o:Individual)<-[r {type:'Related'}]-($pvar)"),
-                                            WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
-                                                 "({ relation: %s, object: %s }) "
-                                                 "END AS related_individuals "
-                                                 % (roll_min_edge_info("r"),
-                                                    roll_min_node_info("o"))))
+    def related_individuals(self): return (Clause(vars=["related_individuals"],
+                                                  MATCH=Template(
+                                                      "OPTIONAL MATCH "
+                                                      "(o:Individual)<-[r {type:'Related'}]-($pvar)"),
+                                                  WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
+                                                       "({ relation: %s, object: %s }) "
+                                                       "END AS related_individuals "
+                                                       % (roll_min_edge_info("r"),
+                                                          roll_min_node_info("o"))))
 
-    def template_domain(self):  return Clause(
-        MATCH=Template(
-            "OPTIONAL MATCH (technique:Class)<-[:is_specified_output_of]"
-            "-(channel:Individual)"
-            "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar) "
-            "WHERE technique.label = 'computer graphic' "
-            "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
-            "UNWIND painted_domains AS pd "
-            "MATCH (channel:Individual { short_form: pd.channel.short_form})"
-            "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
-        WITH="collect({ anatomical_type: %s ,"
-             " anatomical_individual: %s, folder: pd.irw.folder, "
-             "center: coalesce (pd.irw.center, []), "
-             "index: [] + coalesce (pd.irw.index, []) })"
-             " AS template_domains" % (roll_min_node_info("c"),
-                                       roll_min_node_info("ai")),
-        vars=["template_domains"])
+    # IMAGES
 
-    def template_channel(self):  return Clause(
-        MATCH=Template(
-            "MATCH (channel:Individual)<-[irw:in_register_with]-"
-            "(channel:Individual)-[:depicts]->($pvar)"),
-        WITH="{ index: coalesce(irw.index, []) + [], "
-             "extent: irw.extent, center: irw.center, voxel: irw.voxel, "
-             "orientation: irw.orientation, image_folder: irw.folder, "
-             "channel: %s } as template_channel" % roll_min_node_info("channel"),
-        vars=["template_channel"])
+    def _set_image_query_common_elements(self):
 
-    def channel_image(self):  return Clause(
+        self._channel_image_match = "<-[:depicts]-" \
+               "(channel:Individual)-[irw:in_register_with]" \
+               "->(template:Individual)-[:depicts]->" \
+               "(template_anat:Individual) WITH template" \
+               ", channel, template_anat, irw, $v %s limit 5 " \
+               "OPTIONAL MATCH (channel)-[:is_specified_output_of" \
+               "]->(technique:Class) "
+
+        self._channel_image_return = "{ channel: %s, imaging_technique: %s," \
+                                     "image: { template_channel : %s, template_anatomy: %s," \
+                                     "image_folder: irw.folder, " \
+                                     "index: coalesce(irw.index, []) + [] }" \
+                                     "}" % (roll_min_node_info('channel'),
+                                            roll_min_node_info('technique'),
+                                            roll_min_node_info('template'),
+                                            roll_min_node_info('template_anat'))
+
+    def channel_image(self):
+        return Clause(
         MATCH=Template("OPTIONAL MATCH ($pvar)" + self._channel_image_match % ''),
         WITH="CASE WHEN channel IS NULL THEN []"
              " ELSE collect (" + self._channel_image_return + ") END AS channel_image",
         vars=["channel_image"])
 
-    def anatomy_channel_image(self):  return Clause(
+    def anatomy_channel_image(self):
+        return Clause(
         MATCH=Template(
             "OPTIONAL MATCH ($pvar)<-"
             "[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)"
@@ -275,6 +253,49 @@ class QueryLibrary:
              "END AS anatomy_channel_image " % (
                  roll_min_node_info("i"), self._channel_image_return),
         vars=["anatomy_channel_image"])
+
+
+    def template_domain(self):  return Clause(
+    MATCH=Template(
+        "OPTIONAL MATCH (technique:Class)<-[:is_specified_output_of]"
+        "-(channel:Individual)"
+        "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar) "
+        "WHERE technique.label = 'computer graphic' "
+        "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
+        "UNWIND painted_domains AS pd "
+        "MATCH (channel:Individual { short_form: pd.channel.short_form})"
+        "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
+    WITH="collect({ anatomical_type: %s ,"
+         " anatomical_individual: %s, folder: pd.irw.folder, "
+         "center: coalesce (pd.irw.center, []), "
+         "index: [] + coalesce (pd.irw.index, []) })"
+         " AS template_domains" % (roll_min_node_info("c"),
+                                   roll_min_node_info("ai")),
+    vars=["template_domains"])
+
+
+    def template_channel(self):  return Clause(
+    MATCH=Template(
+        "MATCH (channel:Individual)<-[irw:in_register_with]-"
+        "(channel:Individual)-[:depicts]->($pvar)"),
+    WITH="{ index: coalesce(irw.index, []) + [], "
+         "extent: irw.extent, center: irw.center, voxel: irw.voxel, "
+         "orientation: irw.orientation, image_folder: irw.folder, "
+         "channel: %s } as template_channel" % roll_min_node_info("channel"),
+    vars=["template_channel"])
+
+    ## PUBS
+
+    def _set_pub_common_query_elements(self):
+        # This is only a function for ease of code editing - places declaration next to where it is used.
+        self._pub_return = "{ core: %s, " \
+                           "PubMed: coalesce(p.PMID, ''), " \
+                           "FlyBase: coalesce(p.FlyBase, ''), DOI: coalesce(p.DOI, '') } " \
+                           "" % roll_min_node_info("p")
+
+        self._syn_return = "{ label: coalesce(rp.synonym, ''), " \
+                           "scope: coalesce(rp.scope, ''), type: coalesce(rp.cat,'') } "
+
 
     def def_pubs(self):  return Clause(MATCH=Template("OPTIONAL MATCH ($pvar)-"
                                                       "[rp:has_reference { typ: 'def'}]->(p:pub) "),
@@ -307,6 +328,7 @@ class QueryLibrary:
                                       WITH="collect (%s) as license" % self._license_return,
                                       vars=['license'])
 
+    # COMPOUND QUERIES
     def anatomical_ind_query(self, short_form, pretty_print=False):
         return query_builder(query_labels=['Individual', 'Anatomy'],
                              query_short_forms=[short_form],
@@ -364,21 +386,14 @@ class QueryLibrary:
                              pretty_print=pretty_print)
 
     def anat_2_ep_query(self, short_forms, pretty_print=False):
-
         aci = self.anatomy_channel_image()
         aci.__setattr__('pvar', 'ep')
-        rel = self.relationships()
-        rel.__setattr__('pvar', 'i')
 
         return query_builder(query_labels=['Class'],
                              query_short_forms=short_forms,
                              clauses=[self.anat_2_ep_wrapper(),
-                                      rel,
                                       aci],
                              pretty_print=pretty_print)
 
 
 
-ql = QueryLibrary()
-
-print(ql.ep_2_anat_query('VFBexp_FBtp0040533'))
