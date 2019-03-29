@@ -16,12 +16,12 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                      query=query, single=False)
 
-#    def test_ep_2_anat_query(self):
-#        query= self.ql.ep_2_anat_query('VFBexp_FBtp0040533',
-#                                       pretty_print=True)
+    def test_ep_2_anat_query(self):
+        query= self.ql.ep_2_anat_query('VFBexp_FBtp0106753',
+                                       pretty_print=True)
 
- #       r = self.qw.test(t=self,
- #                    query=query)
+        r = self.qw.test(t=self,
+                    query=query)
 
 
 

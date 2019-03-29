@@ -84,6 +84,7 @@ def query_builder(clauses: List[Clause], query_short_forms=None,
     out = []
 
     for c in clauses:
+
         out.append(c.get_clause(varz=node_vars + data_vars))
         node_vars.extend(c.node_vars)
         data_vars.extend(c.vars)
@@ -163,21 +164,15 @@ class QueryLibrary:
 
     def ep_2_anat_wrapper(self):
         return Clause(
-            MATCH=Template("MATCH (ep:Expression_pattern)-[ar:overlaps|has_part]"
-                           "-(i:Individual)-[:INSTANCEOF]->(a:Class) WHERE ep.class in $ssf"
-                           "WITH  i, a, ep, er "
+            MATCH=Template("MATCH (ep:Expression_pattern)<-[ar:overlaps|part_of]-(anoni:Individual)"
+                           "-[:INSTANCEOF]->(anat:Class) WHERE ep.short_form in $ssf "
+                           "WITH  anoni, anat, ar "
                            "OPTIONAL MATCH (p:pub { short_form: ar.pub}) "),
-            WITH="i, ep, %s as anat, %s as pub" % (roll_min_node_info('anat'), roll_pub_return("pub")),
-            vars=['anat', 'pub'],
-            node_vars=['i', 'ep'],
-            RETURN='%s AS expression_pattern' % (roll_min_node_info('ep')))
+            WITH="anat, anoni, %s AS pub" % roll_pub_return("p"),
+            vars=['pub'],
+            node_vars=['anoni', 'anat'],
+            RETURN='%s AS anatomy' % (roll_min_node_info('anat')))
 
-    # Re-use relationship?
-    def ep_stage(self):
-        return Clause(
-            MATCH=Template("OPTIONAL MATCH (i)-[sr:Related]->(s:FBdv)"),
-            WITH="collect({ term: %s, rel: %s } AS "
-        )
 
     # XREFS
 
@@ -213,6 +208,17 @@ class QueryLibrary:
                                                        "END AS related_individuals "
                                                        % (roll_min_edge_info("r"),
                                                           roll_min_node_info("o"))))
+
+    def ep_stage(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH ($pvar)-[r:Related]->(o:FBdv)"),
+            WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
+                  "({ relation: %s, object: %s }) "
+                  "END AS stages "
+                 "" % (roll_min_edge_info("r"),
+                       roll_min_node_info("o")),
+            vars=['stages']
+        )
 
     # IMAGES
 
@@ -376,22 +382,29 @@ class QueryLibrary:
                                       ],
                              pretty_print=pretty_print)
 
-    def ep_2_anat_query(self, short_form, pretty_print=False):
+    def anat_2_ep_query(self, short_forms, pretty_print=False):
+        # we want images of anatomy (anat, returned by self.anat_2_ep_wrapper())
         aci = self.anatomy_channel_image()
         aci.__setattr__('pvar', 'anat')
         return query_builder(query_labels=['Class'],
-                             query_short_forms=[short_form],
+                             query_short_forms=short_forms,
                              clauses=[self.anat_2_ep_wrapper(),
                                       aci],
                              pretty_print=pretty_print)
 
-    def anat_2_ep_query(self, short_forms, pretty_print=False):
+    def ep_2_anat_query(self, short_form, pretty_print=False):
+        # columns: anatomy,
         aci = self.anatomy_channel_image()
+        # We want images of expression patterns (ep, returned by self.anat_2_ep_wrapper())
         aci.__setattr__('pvar', 'ep')
+        # Return relationship on anoni
+        rel = self.ep_stage()
+        rel.__setattr__('pvar', 'anoni')
 
         return query_builder(query_labels=['Class'],
-                             query_short_forms=short_forms,
-                             clauses=[self.anat_2_ep_wrapper(),
+                             query_short_forms=[short_form],
+                             clauses=[self.ep_2_anat_wrapper(),
+                                      rel,
                                       aci],
                              pretty_print=pretty_print)
 
