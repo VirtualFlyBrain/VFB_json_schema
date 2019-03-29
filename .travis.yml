@@ -1,11 +1,11 @@
-language: python
 
+language: python
 sudo: required
 dist: xenial
 
 python:
   - "3.7"
-  
+
 install:
   - pip install -r requirements.txt
   
@@ -14,5 +14,7 @@ before_script:
 
 script:
   - export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
-  - cd src/test
-  - python query_roller_tests.py
+  - cd src
+  - python -m vfb_query_builder.test.results_schema_tests
+  - python -m vfb_query_builder.test.TermInfo_schema_tests
+
