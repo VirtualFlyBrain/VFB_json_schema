@@ -124,21 +124,11 @@ class QueryLibrary:
     # Using class to wrap for convenience. Could do the same with a set of static methods.
 
     def __init__(self):
-        self._dataset_return = "{ core: %s, catmaid_annotation_id: " \
-                               "coalesce(ds.catmaid_annotation_id, ''), " \
-                               "link: coalesce(ds.dataset_link, '')  }" \
-                               % (roll_min_node_info('ds'))
 
-        self._license_return = "{ core: %s, " \
-                               "icon: coalesce(l.license_logo, ''), " \
-                               "link: coalesce(l.license_url, '')} " % (
-                                   roll_min_node_info('l'))
-
-#        self._channel_image_return = ''
+        # Using methods for ease of reading code - so these can be next to queries where they apply.
         self._set_image_query_common_elements()
-#        self._pub_return = ''
-#        self._syn_return = ''
         self._set_pub_common_query_elements()
+        self._set_dataset_license_common_elements()
 
     def term(self):
         return Clause(
@@ -179,7 +169,8 @@ class QueryLibrary:
     def xrefs(self):  return Clause(
         MATCH=Template("OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-($pvar) "),
         WITH="CASE WHEN s IS NULL THEN [] ELSE COLLECT"
-             "({ link: s.link_base + coalesce(dbx.accession, ''), link_text: s.label, "
+             "({ base: s.link_base, accession: coalesce(dbx.accession, ''), "
+             "link_text: primary.label + ' on ' + s.label, "
              "site: %s, icon: coalesce(s.link_icon_url, '') }) END AS xrefs" % roll_min_node_info("s"),
         vars=["xrefs"])
 
@@ -322,6 +313,18 @@ class QueryLibrary:
                                        "collect(" + self._pub_return + ") END AS def_pubs",
                                   vars=['def_pubs'])
 
+    def _set_dataset_license_common_elements(self):
+        self._dataset_return = "{ core: %s, catmaid_annotation_id: " \
+                               "coalesce(ds.catmaid_annotation_id, ''), " \
+                               "link: coalesce(ds.dataset_link, '')  }" \
+                               % (roll_min_node_info('ds'))
+
+        self._license_return = "{ core: %s, " \
+                               "icon: coalesce(l.license_logo, ''), " \
+                               "link: coalesce(l.license_url, '')} " % (
+                                   roll_min_node_info('l'))
+
+
     def dataSet_license(self):  return Clause(MATCH=Template("OPTIONAL MATCH "
                                                              "($pvar)-[:has_source]->(ds:DataSet)"
                                                              "-[:has_license]->(l:License)"),
@@ -333,6 +336,7 @@ class QueryLibrary:
                                                      "($pvar)-[:has_license]->(l:License)"),
                                       WITH="collect (%s) as license" % self._license_return,
                                       vars=['license'])
+
 
     # COMPOUND QUERIES
     def anatomical_ind_query(self, short_form, pretty_print=False):

@@ -249,14 +249,19 @@
     "xref": {
       "additionalProperties": false,
       "required": [
-        "link",
+        "base",
+        "accession",
         "link_text",
         "site"
       ],
       "type": "object",
       "properties": {
-        "link": {
-          "description": "A URL linking to some third party site.",
+        "base": {
+          "description": "The base of a URL linking to some third party site. Makes a link to specific page on target resource when accession is appended.",
+          "type": "string"
+        },
+        "accession": {
+          "description": "Third party ID. Makes a link to specific page on target resource when appended to base.",
           "type": "string"
         },
         "link_text": {
