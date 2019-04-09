@@ -130,6 +130,11 @@ class TermInfoRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
+    def test_dataset(self):
+        query = self.ql.data_set_query(short_form='Ito2013')
+        r = self.qw.test(t=self,
+                         query=query)
+
     def test_dataset_xrefs(self):
         query = query_builder(query_labels=['DataSet'],
                               query_short_forms=['Ito2013'],

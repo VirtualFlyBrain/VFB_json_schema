@@ -353,7 +353,7 @@ class QueryLibrary:
                                       self.parents(),
                                       self.relationships(),
                                       self.xrefs(),
-                                      self.channel_image(),
+                                      self.anatomy_channel_image(),
                                       self.pub_syn(),
                                       self.def_pubs()],
                              pretty_print=pretty_print)
@@ -381,6 +381,9 @@ class QueryLibrary:
                                       self.related_individuals()
                                       ],
                              pretty_print=pretty_print)
+
+
+
 
     def anat_2_ep_query(self, short_forms, pretty_print=False):
         # we want images of anatomy (anat, returned by self.anat_2_ep_wrapper())
