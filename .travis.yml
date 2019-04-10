@@ -28,6 +28,6 @@ script:
   - cd src
   - for TEST in $RUNTESTS
     do
-      python -m $TEST
-    done
+      python -m $TEST;
+    done;
 
