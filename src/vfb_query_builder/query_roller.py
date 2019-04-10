@@ -169,9 +169,10 @@ class QueryLibrary:
     def xrefs(self):  return Clause(
         MATCH=Template("OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-($pvar) "),
         WITH="CASE WHEN s IS NULL THEN [] ELSE COLLECT"
-             "({ base: s.link_base, accession: coalesce(dbx.accession, ''), "
+             "({ link_base: s.link_base, accession: coalesce(dbx.accession, ''), "
              "link_text: primary.label + ' on ' + s.label, "
-             "site: %s, icon: coalesce(s.link_icon_url, '') }) END AS xrefs" % roll_min_node_info("s"),
+             "site: %s, icon: coalesce(s.link_icon_url, ''),  "
+             "link_postfix: coalesce(s.link_postfix, '')}) END AS xrefs" % roll_min_node_info("s"),
         vars=["xrefs"])
 
     # RELATIONSHIPS
