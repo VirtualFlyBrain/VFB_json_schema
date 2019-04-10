@@ -26,7 +26,7 @@ script:
   - grep -r '= neo4j_connect(' .
   - export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
   - cd src
-  - for TEST in $RUNTESTS
+  - for TEST in $RUNTESTS;
     do
       python -m $TEST;
     done;
