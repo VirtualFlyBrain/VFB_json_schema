@@ -7,7 +7,7 @@ class TermInfoRollerTest(unittest.TestCase):
 
     def setUp(self):
         self.ql = QueryLibrary()
-        self.qw = TestWrapper('vfb_terminfo.json')
+        self.qw = TestWrapper('vfb_termInfo.json')
         print("Running", self.id().split('.')[1:])
 
     def test_class_term(self):
@@ -183,4 +183,5 @@ class TermInfoRollerTest(unittest.TestCase):
     def tearDown(self):
         return
 
-
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

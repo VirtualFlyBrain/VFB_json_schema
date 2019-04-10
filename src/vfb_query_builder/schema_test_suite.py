@@ -60,7 +60,7 @@ def recurse_through_errors(es, level = 0):
     # Assuming blank context is a sufficient escape clause here.
     for e in es:
         warnings.warn(
-            "***"*level + " subschema level " + str(level) + "\t".join([e.message,
+            "***"*level + " subschema level " + str(level) + "\t".join([str(e.message),
             "Path to error:" + str(e.absolute_schema_path)]) + "\n")
         if e.context:
             level += 1
