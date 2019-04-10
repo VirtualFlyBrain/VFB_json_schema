@@ -111,6 +111,20 @@ def roll_min_edge_info(var):
     return "{ label: %s.label, " \
            "iri: %s.uri, type: type(%s) } " % (var, var, var)  # short_forms are not present in OLS-PDB
 
+def roll_license_return(var):
+    r = Template("{ core: %s, "
+                 "icon: coalesce($var.license_logo, ''), "
+                 "link: coalesce($var.license_url, '')} ")
+    return r.substitute(var = var)
+
+    def _set_dataset_license_common_elements(self):
+        self._dataset_return = "{ core: %s, catmaid_annotation_id: " \
+                               "coalesce(ds.catmaid_annotation_id, ''), " \
+                               "link: coalesce(ds.dataset_link, '')  }" \
+                               % (roll_min_node_info('ds'))
+
+        self._license_return = "" % (
+                                   roll_min_node_info('l'))
 
 def roll_pub_return(var):
     s = Template("{ core: $core, "
@@ -313,17 +327,6 @@ class QueryLibrary:
                                   WITH="CASE WHEN p is null THEN [] ELSE "
                                        "collect(" + self._pub_return + ") END AS def_pubs",
                                   vars=['def_pubs'])
-
-    def _set_dataset_license_common_elements(self):
-        self._dataset_return = "{ core: %s, catmaid_annotation_id: " \
-                               "coalesce(ds.catmaid_annotation_id, ''), " \
-                               "link: coalesce(ds.dataset_link, '')  }" \
-                               % (roll_min_node_info('ds'))
-
-        self._license_return = "{ core: %s, " \
-                               "icon: coalesce(l.license_logo, ''), " \
-                               "link: coalesce(l.license_url, '')} " % (
-                                   roll_min_node_info('l'))
 
 
     def dataSet_license(self):  return Clause(MATCH=Template("OPTIONAL MATCH "
