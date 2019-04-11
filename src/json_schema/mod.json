@@ -79,6 +79,14 @@
           "items": {
             "type": "string"
           }
+        },
+        "link": {
+          "description": "An external URL for the term (xref to original source).",
+          "type": "string"
+        },
+        "icon": {
+          "description": "An icon for the term - to be used in linking.",
+          "type": "string"
         }
       }
     },
@@ -211,34 +219,34 @@
           "minItems": 0,
           "maxItems": 1
         },
-        "center" : {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
+        "center": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
           "minItems": 0,
           "maxItems": 3
         },
-        "extent" : {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
+        "extent": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
           "minItems": 0,
           "maxItems": 3
         },
-        "voxel" : {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
+        "voxel": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
           "minItems": 0,
           "maxItems": 3
         },
-        "orientation" : {
+        "orientation": {
           "type": "string"
         },
-        "image_folder" : {
+        "image_folder": {
           "type": "string"
         },
         "channel": {
@@ -300,10 +308,6 @@
         },
         "icon": {
           "description": "A link to an icon to display for the third party site.",
-          "type": "string"
-        },
-        "catmaid_annotation_id": {
-          "description": "ID in CATMAID server",
           "type": "string"
         }
       }
@@ -418,5 +422,4 @@
       }
     }
   }
-
 }

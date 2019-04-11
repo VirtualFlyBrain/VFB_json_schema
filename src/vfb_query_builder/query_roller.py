@@ -111,20 +111,16 @@ def roll_min_edge_info(var):
     return "{ label: %s.label, " \
            "iri: %s.uri, type: type(%s) } " % (var, var, var)  # short_forms are not present in OLS-PDB
 
-def roll_license_return(var):
-    r = Template("{ core: %s, "
-                 "icon: coalesce($var.license_logo, ''), "
-                 "link: coalesce($var.license_url, '')} ")
-    return r.substitute(var = var)
 
-    def _set_dataset_license_common_elements(self):
-        self._dataset_return = "{ core: %s, catmaid_annotation_id: " \
-                               "coalesce(ds.catmaid_annotation_id, ''), " \
-                               "link: coalesce(ds.dataset_link, '')  }" \
-                               % (roll_min_node_info('ds'))
 
-        self._license_return = "" % (
-                                   roll_min_node_info('l'))
+def roll_license_return_dict(var):
+    return {'icon' :  "coalesce(%s.license_logo, '')" % var,
+        'link' : "coalesce(%s.license_url, '')" % var}
+
+def roll_dataset_return_dict(var, typ = ''):
+    return  {
+        "link": "coalesce(%s.dataset_link, '')" % var
+    }
 
 def roll_pub_return(var):
     s = Template("{ core: $core, "
@@ -132,6 +128,19 @@ def roll_pub_return(var):
                  "FlyBase: coalesce($v.FlyBase, ''), DOI: coalesce($v.DOI, '') }")
     return s.substitute(core=roll_min_node_info(var), v=var)
 
+def roll_node_map(var: str, d: dict, typ = ''):
+    if typ:
+        if typ =='core':
+            d.update({ 'core': roll_min_node_info(var)})
+        elif typ == 'extended_core':
+            d.update({ 'core': roll_min_node_info(var),
+                       'description': 'coalesce(%s.description, [])' % var,
+                       "comment": "coalesce(%s.`annotation - comment`, [])" % var
+                    })
+
+        else:
+            raise Exception('Unknown type: %s should be one or core, extended_core' % typ)
+    return '{ ' + ', '.join([' : '.join(kv) for kv in d.items()]) + ' }'
 
 class QueryLibrary:
 
@@ -142,16 +151,23 @@ class QueryLibrary:
         # Using methods for ease of reading code - so these can be next to queries where they apply.
         self._set_image_query_common_elements()
         self._set_pub_common_query_elements()
-        self._set_dataset_license_common_elements()
+        self.dataset_spec_fields = {
+        "link": "coalesce(%s.dataset_link, '')"
+    }
+        self.license_spec_fields = {'icon' :  "coalesce(%s.license_logo, '')",
+        'link' : "coalesce(%s.license_url, '')x"}
 
-    def term(self):
+    def term(self, return_extensions = None):
+        if return_extensions is None:
+          return_extensions = {}
         return Clause(
             MATCH=Template("MATCH (primary$labels) WHERE primary.short_form in $ssf "),
             WITH='primary',
             node_vars=['primary'],
-            RETURN="{ core: %s, description: coalesce(primary.description, []), " \
-                   "comment: coalesce(primary.`annotation-comment`, [])} " \
-                   "AS term" % (roll_min_node_info("primary")))
+            RETURN= roll_node_map(
+                d = return_extensions,
+                typ='extended_core',
+                var = 'primary') + " AS term")
 
     # EXPRESSION QUERIES
 
@@ -329,17 +345,28 @@ class QueryLibrary:
                                   vars=['def_pubs'])
 
 
-    def dataSet_license(self):  return Clause(MATCH=Template("OPTIONAL MATCH "
-                                                             "($pvar)-[:has_source]->(ds:DataSet)"
-                                                             "-[:has_license]->(l:License)"),
-                                              WITH="COLLECT ({ dataset: %s, license: %s}) "
-                                                   "AS dataset_license" % (self._dataset_return, self._license_return),
-                                              vars=['dataset_license'])
+    def dataSet_license(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH "
+                           "($pvar)-[:has_source]->(ds:DataSet)"
+                            "-[:has_license]->(l:License)"),
+            WITH="COLLECT ({ dataset: %s, license: %s}) "
+                  "AS dataset_license" % (roll_node_map(var = 'l',
+                                                        d=roll_dataset_return_dict('l'),
+                                                        typ='core'),
+                                          roll_node_map(var = 'l',
+                                                        d=roll_license_return_dict('l'),
+                                                        typ='core')),
+            vars=['dataset_license'])
 
-    def license(self):  return Clause(MATCH=Template("OPTIONAL MATCH "
-                                                     "($pvar)-[:has_license]->(l:License)"),
-                                      WITH="collect (%s) as license" % self._license_return,
-                                      vars=['license'])
+    def license(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH "
+                           "($pvar)-[:has_license]->(l:License)"),
+            WITH="collect (%s) as license" % roll_node_map(var = 'l',
+                                                           typ='core',
+                                                           d = roll_license_return_dict('l')),
+            vars=['license'])
 
 
     # COMPOUND QUERIES
@@ -354,6 +381,12 @@ class QueryLibrary:
                                       self.related_individuals()],
                              pretty_print=pretty_print)  # Is Anatomy label sufficient here
 
+    def license_query(self, short_form, pretty_print = False):
+        return query_builder(query_labels=['License'],
+                             query_short_forms=[short_form],
+                             clauses=[self.term(
+                             return_extensions=roll_license_return_dict('primary'))])
+
     def class_query(self, short_form, pretty_print=False):
         return query_builder(query_labels=['Class', 'Anatomy'],
                              query_short_forms=[short_form],
@@ -366,14 +399,18 @@ class QueryLibrary:
                                       self.def_pubs()],
                              pretty_print=pretty_print)
 
-    def data_set_query(self, short_form, pretty_print=False):
+    def dataset_query(self, short_form, pretty_print=False):
         return query_builder(query_labels=['DataSet'],
                              query_short_forms=[short_form],
-                             clauses=[self.term(),
-                                      self.anatomy_channel_image(),
-                                      self.xrefs(),
-                                      self.license(),
-                                      self.pub()],
+                             clauses=[self.term(
+                                 return_extensions=
+                                     roll_dataset_return_dict(
+                                                        'primary',
+                                                        typ = 'core')),
+                                    self.anatomy_channel_image(),
+                                    self.xrefs(),
+                                    self.license(),
+                                    self.pub()],
                              pretty_print=pretty_print)
 
     def template_query(self, short_form, pretty_print=False):
