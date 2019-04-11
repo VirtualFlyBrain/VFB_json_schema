@@ -131,7 +131,12 @@ class TermInfoRollerTest(unittest.TestCase):
                          query=query)
 
     def test_dataset(self):
-        query = self.ql.data_set_query(short_form='Ito2013')
+        query = self.ql.dataset_query(short_form='Ito2013')
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_license(self):
+        query = self.ql.license_query(short_form='VFBlicense_CC_BY_SA_4_0')
         r = self.qw.test(t=self,
                          query=query)
 
