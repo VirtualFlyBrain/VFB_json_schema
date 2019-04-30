@@ -351,8 +351,8 @@ class QueryLibrary:
                            "($pvar)-[:has_source]->(ds:DataSet)"
                             "-[:has_license]->(l:License)"),
             WITH="COLLECT ({ dataset: %s, license: %s}) "
-                  "AS dataset_license" % (roll_node_map(var = 'l',
-                                                        d=roll_dataset_return_dict('l'),
+                  "AS dataset_license" % (roll_node_map(var = 'ds',
+                                                        d=roll_dataset_return_dict('ds'),
                                                         typ='core'),
                                           roll_node_map(var = 'l',
                                                         d=roll_license_return_dict('l'),
