@@ -374,6 +374,7 @@ class QueryLibrary:
         return query_builder(query_labels=['Individual', 'Anatomy'],
                              query_short_forms=[short_form],
                              clauses=[self.term(),
+                                      self.dataSet_license(),
                                       self.parents(),
                                       self.relationships(),
                                       self.xrefs(),
