@@ -288,7 +288,7 @@ class QueryLibrary:
         "OPTIONAL MATCH (technique:Class)<-[:is_specified_output_of]"
         "-(channel:Individual)"
         "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar) "
-        "WHERE technique.label = 'computer graphic' "
+        "WHERE has(irw.index) "
         "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
         "UNWIND painted_domains AS pd "
         "MATCH (channel:Individual { short_form: pd.channel.short_form})"
