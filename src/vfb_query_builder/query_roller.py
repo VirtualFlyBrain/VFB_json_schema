@@ -12,7 +12,7 @@ class Clause:
         a combination of neo4j labels specified in `starting labels`
         with a short_form in `starting_short_forms`, bound to the variable 'primary'
         (default specification of pvar).  This should have a return statement specifying how
-        primary should be unpacked into a datastructures in  the return statement.
+        primary should be unpacked into a datastructure in  the return statement.
         2. Subsequent clauses are OPTIONAL MATCH statements, they may return a
         3. Any MATCH statement my consist of multiple whole cypher clauses (MATCH  + WITH)
           In this case, each internal WITH clause must have a $v for interpolation of
@@ -20,8 +20,10 @@ class Clause:
 
     MATCH: A cypher (OPTIONAL) MATCH clause. This must be a Template instance.
     It *may* contain references to interpolation vars, specified by clause attributes:
-        $labels: starting_label of primary matched term. By convention, used only in first clause;
-        $pvar: pvar;
+        $labels: labels of primary matched term.  Can be used to modify
+                 labels of $pvar$labels in other clauses in order
+                 to further restrict.
+        $pvar$labels: pvar;
         $ssf: starting short forms
         $v: vars
     WITH: A cypher string that converts variable output of the MATCH
@@ -45,6 +47,7 @@ class Clause:
     starting_short_forms: list = field(default_factory=list)
     starting_labels: list = field(default_factory=list)
     pvar: str = 'primary'
+    limit: str = ''
 
     def get_clause(self, varz, pretty_print=True):
         """Generate a cypher string using the attributes of this clause object,
@@ -59,7 +62,8 @@ class Clause:
             [self.MATCH.substitute(pvar=self.pvar,
                                    v=', '.join(varz),
                                    ssf=str(self.starting_short_forms),
-                                   labels=':'.join(l)),
+                                   labels=':'.join(l),
+                                   limit=self.limit),
              'WITH ' + ','.join([self.WITH] + varz)])
 
 
@@ -184,7 +188,7 @@ class QueryLibrary:
 
     def ep_2_anat_wrapper(self):
         return Clause(
-            MATCH=Template("MATCH (ep:Expression_pattern)<-[ar:overlaps|part_of]-(anoni:Individual)"
+            MATCH=Template("MATCH (ep:Expression_pattern:Class)<-[ar:overlaps|part_of]-(anoni:Individual)"
                            "-[:INSTANCEOF]->(anat:Class) WHERE ep.short_form in $ssf "
                            "WITH  anoni, anat, ar "
                            "OPTIONAL MATCH (p:pub { short_form: ar.pub}) "),
@@ -198,14 +202,14 @@ class QueryLibrary:
 
     def xrefs(self):
         match_self_xref = "OPTIONAL MATCH (s:Site { short_form: primary.self_xref }) "
-        match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-($pvar) "
+        match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-($pvar$labels) "
 
         xr = "CASE WHEN s IS NULL THEN %s ELSE COLLECT" \
              "({ link_base: s.link_base, " \
              "accession: coalesce(%s, ''), " \
              "link_text: primary.label + ' on ' + s.label, " \
              "site: %s, icon: coalesce(s.link_icon_url, ''),  " \
-             "link_postfix: coalesce(s.link_postfix, '')}) " # Should be $pvar not primary, but need sub on WITH!
+             "link_postfix: coalesce(s.link_postfix, '')}) " # Should be $pvar$labels not primary, but need sub on WITH!
         xrs = "END AS self_xref, $v"  # Passing vars
         xrx = "+ self_xref END AS xrefs"
 
@@ -222,13 +226,13 @@ class QueryLibrary:
 
     def parents(self):  return Clause(vars=["parents"],
                                       MATCH=Template("OPTIONAL MATCH (o:Class)"
-                                                     "<-[r:SUBCLASSOF|INSTANCEOF]-($pvar) "),
+                                                     "<-[r:SUBCLASSOF|INSTANCEOF]-($pvar$labels) "),
                                       WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
                                            "(%s) END AS parents " % roll_min_node_info("o"))  # Draft
 
     def relationships(self): return (Clause(vars=["relationships"],
                                             MATCH=Template("OPTIONAL MATCH "
-                                                           "(o)<-[r {type:'Related'}]-($pvar)"),
+                                                           "(o)<-[r {type:'Related'}]-($pvar$labels)"),
                                             WITH="CASE WHEN o IS NULL THEN [] "
                                                  "ELSE COLLECT ({ relation: %s, object: %s }) "
                                                  "END AS relationships " % (roll_min_edge_info("r"),
@@ -237,7 +241,7 @@ class QueryLibrary:
     def related_individuals(self): return (Clause(vars=["related_individuals"],
                                                   MATCH=Template(
                                                       "OPTIONAL MATCH "
-                                                      "(o:Individual)<-[r {type:'Related'}]-($pvar)"),
+                                                      "(o:Individual)<-[r {type:'Related'}]-($pvar$labels)"),
                                                   WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
                                                        "({ relation: %s, object: %s }) "
                                                        "END AS related_individuals "
@@ -246,7 +250,7 @@ class QueryLibrary:
 
     def ep_stage(self):
         return Clause(
-            MATCH=Template("OPTIONAL MATCH ($pvar)-[r:Related]->(o:FBdv)"),
+            MATCH=Template("OPTIONAL MATCH ($pvar$labels)-[r:Related]->(o:FBdv)"),
             WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
                   "({ relation: %s, object: %s }) "
                   "END AS stages "
@@ -263,7 +267,7 @@ class QueryLibrary:
                "(channel:Individual)-[irw:in_register_with]" \
                "->(template:Individual)-[:depicts]->" \
                "(template_anat:Individual) WITH template" \
-               ", channel, template_anat, irw, $v %s limit 5 " \
+               ", channel, template_anat, irw, $v %s $limit " \
                "OPTIONAL MATCH (channel)-[:is_specified_output_of" \
                "]->(technique:Class) "
 
@@ -278,29 +282,30 @@ class QueryLibrary:
 
     def channel_image(self):
         return Clause(
-        MATCH=Template("OPTIONAL MATCH ($pvar)" + self._channel_image_match % ''),
+        MATCH=Template("OPTIONAL MATCH ($pvar$labels)" + self._channel_image_match % ''),
         WITH="CASE WHEN channel IS NULL THEN []"
              " ELSE collect (" + self._channel_image_return + ") END AS channel_image",
         vars=["channel_image"])
 
     def anatomy_channel_image(self):
         return Clause(
-        MATCH=Template(
-            "OPTIONAL MATCH ($pvar)<-"
-            "[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)"
-            + self._channel_image_match % ', i'),  # Hacky sub!
-        WITH="CASE WHEN channel IS NULL THEN [] "
-             "ELSE COLLECT({ anatomy: %s, channel_image: %s }) " \
-             "END AS anatomy_channel_image " % (
+            MATCH=Template(
+                "OPTIONAL MATCH ($pvar$labels)<-"
+                "[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)"
+                + self._channel_image_match % ', i'),  # Hacky sub!
+            WITH="CASE WHEN channel IS NULL THEN [] " \
+                 "ELSE COLLECT({ anatomy: %s, channel_image: %s }) " \
+                 "END AS anatomy_channel_image " % (
                  roll_min_node_info("i"), self._channel_image_return),
-        vars=["anatomy_channel_image"])
+            vars=["anatomy_channel_image"],
+            limit='limit 5')
 
 
     def template_domain(self):  return Clause(
     MATCH=Template(
         "OPTIONAL MATCH (technique:Class)<-[:is_specified_output_of]"
         "-(channel:Individual)"
-        "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar) "
+        "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar$labels) "
         "WHERE has(irw.index) "
         "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
         "UNWIND painted_domains AS pd "
@@ -318,7 +323,7 @@ class QueryLibrary:
     def template_channel(self):  return Clause(
     MATCH=Template(
         "MATCH (channel:Individual)<-[irw:in_register_with]-"
-        "(channel:Individual)-[:depicts]->($pvar)"),
+        "(channel:Individual)-[:depicts]->($pvar$labels)"),
     WITH="{ index: coalesce(irw.index, []) + [], "
          "extent: irw.extent, center: irw.center, voxel: irw.voxel, "
          "orientation: irw.orientation, image_folder: irw.folder, "
@@ -338,20 +343,20 @@ class QueryLibrary:
                            "scope: coalesce(rp.scope, ''), type: coalesce(rp.cat,'') } "
 
 
-    def def_pubs(self):  return Clause(MATCH=Template("OPTIONAL MATCH ($pvar)-"
+    def def_pubs(self):  return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
                                                       "[rp:has_reference { typ: 'def'}]->(p:pub) "),
                                        WITH="CASE WHEN p is null THEN "
                                             "[] ELSE collect(" + self._pub_return + ") END AS def_pubs",
                                        vars=['def_pubs'])
 
-    def pub_syn(self):  return Clause(MATCH=Template("OPTIONAL MATCH ($pvar)-"
+    def pub_syn(self):  return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
                                                      "[rp:has_reference { typ: 'syn'}]->(p:pub) "),
                                       WITH="CASE WHEN p is null THEN [] "
                                            "ELSE collect({ pub: %s, synonym: %s }) END AS pub_syn"
                                            % (self._pub_return, self._syn_return),
                                       vars=['pub_syn'])
 
-    def pub(self):  return Clause(MATCH=Template("OPTIONAL MATCH ($pvar)"
+    def pub(self):  return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)"
                                                  "-[rp:has_reference]->(p:pub) "),
                                   WITH="CASE WHEN p is null THEN [] ELSE "
                                        "collect(" + self._pub_return + ") END AS def_pubs",
@@ -361,7 +366,7 @@ class QueryLibrary:
     def dataSet_license(self):
         return Clause(
             MATCH=Template("OPTIONAL MATCH "
-                           "($pvar)-[:has_source]->(ds:DataSet)"
+                           "($pvar$labels)-[:has_source]->(ds:DataSet)"
                             "-[:has_license]->(l:License)"),
             WITH="COLLECT ({ dataset: %s, license: %s}) "
                   "AS dataset_license" % (roll_node_map(var = 'ds',
@@ -375,7 +380,7 @@ class QueryLibrary:
     def license(self):
         return Clause(
             MATCH=Template("OPTIONAL MATCH "
-                           "($pvar)-[:has_license]->(l:License)"),
+                           "($pvar$labels)-[:has_license]->(l:License)"),
             WITH="collect (%s) as license" % roll_node_map(var = 'l',
                                                            typ='core',
                                                            d = roll_license_return_dict('l')),
@@ -420,7 +425,7 @@ class QueryLibrary:
                                  return_extensions=
                                      roll_dataset_return_dict(
                                                         'primary',
-                                                        typ = 'core')),
+                                                        typ='core')),
                                     self.anatomy_channel_image(),
                                     self.xrefs(),
                                     self.license(),
@@ -445,9 +450,10 @@ class QueryLibrary:
 
 
     def anat_2_ep_query(self, short_forms, pretty_print=False):
-        # we want images of anatomy (anat, returned by self.anat_2_ep_wrapper())
+        # we want images of eps (ep, returned by self.anat_2_ep_wrapper())
         aci = self.anatomy_channel_image()
-        aci.__setattr__('pvar', 'anat')
+        aci.__setattr__('pvar', 'ep')
+        aci.__setattr__('limit', '')
         return query_builder(query_labels=['Class'],
                              query_short_forms=short_forms,
                              clauses=[self.anat_2_ep_wrapper(),
@@ -457,8 +463,12 @@ class QueryLibrary:
     def ep_2_anat_query(self, short_form, pretty_print=False):
         # columns: anatomy,
         aci = self.anatomy_channel_image()
-        # We want images of expression patterns (ep, returned by self.anat_2_ep_wrapper())
-        aci.__setattr__('pvar', 'ep')
+        # We want images of anat, returned by self.anat_2_ep_wrapper())
+        aci.__setattr__('pvar', 'anat')
+        # Add Synaptic neuropil restriction
+        aci.__setattr__('starting_labels', ['Synaptic_neuropil'])
+        # Remove limits on number images returns
+        aci.__setattr__('limit', '')
         # Return relationship on anoni
         rel = self.ep_stage()
         rel.__setattr__('pvar', 'anoni')
