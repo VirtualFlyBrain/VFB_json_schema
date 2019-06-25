@@ -196,14 +196,27 @@ class QueryLibrary:
 
     # XREFS
 
-    def xrefs(self):  return Clause(
-        MATCH=Template("OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-($pvar) "),
-        WITH="CASE WHEN s IS NULL THEN [] ELSE COLLECT"
-             "({ link_base: s.link_base, accession: coalesce(dbx.accession, ''), "
-             "link_text: primary.label + ' on ' + s.label, "
-             "site: %s, icon: coalesce(s.link_icon_url, ''),  "
-             "link_postfix: coalesce(s.link_postfix, '')}) END AS xrefs" % roll_min_node_info("s"),
-        vars=["xrefs"])
+    def xrefs(self):
+        match_self_xref = "OPTIONAL MATCH (s:Site { short_form: primary.self_xref }) "
+        match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-($pvar) "
+
+        xr = "CASE WHEN s IS NULL THEN %s ELSE COLLECT" \
+             "({ link_base: s.link_base, " \
+             "accession: coalesce(%s, ''), " \
+             "link_text: primary.label + ' on ' + s.label, " \
+             "site: %s, icon: coalesce(s.link_icon_url, ''),  " \
+             "link_postfix: coalesce(s.link_postfix, '')}) " # Should be $pvar not primary, but need sub on WITH!
+        xrs = "END AS self_xref, $v"  # Passing vars
+        xrx = "+ self_xref END AS xrefs"
+
+        return Clause(
+            MATCH=Template(' '.join([match_self_xref, "WITH", xr, xrs, match_ext_xref])
+                           % ('[]','primary.short_form',
+                              roll_min_node_info("s"))),
+            WITH='  '.join([xr, xrx]) % ('self_xref',
+                                         'dbx.accession',
+                                         roll_min_node_info("s")),
+            vars=["xrefs"])
 
     # RELATIONSHIPS
 
