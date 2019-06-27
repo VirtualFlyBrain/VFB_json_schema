@@ -1,6 +1,11 @@
 from dataclasses import dataclass, field
 from typing import List
 from string import Template
+import subprocess
+
+def get_version_tag():
+    tag = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'])
+    return tag.decode(encoding = 'ascii').rstrip()
 
 
 @dataclass
@@ -68,7 +73,7 @@ class Clause:
 
 
 def query_builder(clauses: List[Clause], query_short_forms=None,
-                  query_labels=None, pretty_print=True):
+                  query_labels=None, pretty_print=True, annotate = True, q_name = ''):
     """clauses: A list of Clause objects. The first element in the list must be an initial clause.
     Initial clauses must have slot for short_forms """
 
@@ -96,7 +101,10 @@ def query_builder(clauses: List[Clause], query_short_forms=None,
             return_clauses.append(c.RETURN)
 
         # TODO: Add in some checks to make sure vars don't get stomped
-
+    if annotate:
+        if q_name:
+            return_clauses.append("'%s' AS query" % q_name)
+        return_clauses.append("'%s' AS version " % get_version_tag())
     return_clause = "RETURN " + ', '.join(return_clauses + data_vars)
     out.append(return_clause)
     return sep.join(out)
@@ -398,13 +406,16 @@ class QueryLibrary:
                                       self.xrefs(),
                                       self.channel_image(),
                                       self.related_individuals()],
+                             q_name='Get JSON for Individual:Anatomy',
                              pretty_print=pretty_print)  # Is Anatomy label sufficient here
 
     def license_query(self, short_form, pretty_print = False):
         return query_builder(query_labels=['License'],
                              query_short_forms=[short_form],
                              clauses=[self.term(
-                             return_extensions=roll_license_return_dict('primary'))])
+                             return_extensions=roll_license_return_dict('primary'))],
+                             q_name='Get JSON for License',
+                             pretty_print=pretty_print)
 
     def class_query(self, short_form, pretty_print=False):
         return query_builder(query_labels=['Class', 'Anatomy'],
@@ -416,6 +427,7 @@ class QueryLibrary:
                                       self.anatomy_channel_image(),
                                       self.pub_syn(),
                                       self.def_pubs()],
+                             q_name='Get JSON for Class',
                              pretty_print=pretty_print)
 
     def dataset_query(self, short_form, pretty_print=False):
@@ -430,6 +442,7 @@ class QueryLibrary:
                                     self.xrefs(),
                                     self.license(),
                                     self.pub()],
+                             q_name='Get JSON for DataSet',
                              pretty_print=pretty_print)
 
     def template_query(self, short_form, pretty_print=False):
@@ -444,10 +457,8 @@ class QueryLibrary:
                                       self.xrefs(),
                                       self.related_individuals()
                                       ],
+                             q_name='Get JSON for Template',
                              pretty_print=pretty_print)
-
-
-
 
     def anat_2_ep_query(self, short_forms, pretty_print=False):
         # we want images of eps (ep, returned by self.anat_2_ep_wrapper())
@@ -458,6 +469,7 @@ class QueryLibrary:
                              query_short_forms=short_forms,
                              clauses=[self.anat_2_ep_wrapper(),
                                       aci],
+                             q_name='Get JSON for anat_2_ep query',
                              pretty_print=pretty_print)
 
     def ep_2_anat_query(self, short_form, pretty_print=False):
@@ -478,6 +490,7 @@ class QueryLibrary:
                              clauses=[self.ep_2_anat_wrapper(),
                                       rel,
                                       aci],
+                             q_name='Get JSON for ep_2_anat query',
                              pretty_print=pretty_print)
 
 
