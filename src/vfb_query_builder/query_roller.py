@@ -96,7 +96,7 @@ def query_builder(clauses: List[Clause], query_short_forms=None,
 
     for c in clauses:
 
-        out.append(c.get_clause(varz=node_vars + data_vars))
+        out.append(c.get_clause(varz=node_vars + data_vars, pretty_print=pretty_print))
         node_vars.extend(c.node_vars)
         data_vars.extend(c.vars)
         if c.RETURN:
