@@ -80,7 +80,15 @@
         }
       }
     },
-    "template_channel": { "$ref": "mod.json#definitions/template_channel" }
+    "template_channel": { "$ref": "mod.json#definitions/template_channel" },
+    "query": {
+      "type":  "string",
+      "description": "A descriptive name for the query used to generate this JSON."
+    },
+    "version": {
+      "type":  "string",
+      "description": "A version tag for the query used to generate this JSON."
+    }
   }
 }
 
