@@ -523,7 +523,7 @@ def term_info_export():
         qf = getattr(ql, qm)
         q_name = qf.__kwdefaults__['q_name']
         q = qf(short_form='$ID')
-        out[q_name] = saxutils.quoteattr(q)
+        out[q_name] = saxutils.escape(q)
     return json.dumps(out)
 
 

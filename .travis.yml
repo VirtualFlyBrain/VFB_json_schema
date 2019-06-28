@@ -8,7 +8,7 @@ python:
   
 env:
   matrix:
-  - VFBPDB=pdb.virtualflybrain.org
+  - VFBPDB=pdb-dev.virtualflybrain.org 
     RUNTESTS='vfb_query_builder.test.TermInfo_schema_tests'
   - VFBPDB=pdb-alpha.virtualflybrain.org
     RUNTESTS='vfb_query_builder.test.TermInfo_schema_tests'
