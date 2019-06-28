@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 from typing import List
 from string import Template
 import subprocess
+from xml.sax import saxutils
+import json
 
 def get_version_tag():
     tag = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'])
@@ -394,9 +396,13 @@ class QueryLibrary:
                                                            d = roll_license_return_dict('l')),
             vars=['license'])
 
-
     # COMPOUND QUERIES
-    def anatomical_ind_query(self, short_form, pretty_print=False):
+
+    def anatomical_ind_query(self, short_form,
+                             *args,
+                             pretty_print=False,
+                             q_name='Get JSON for Individual:Anatomy'):
+
         return query_builder(query_labels=['Individual', 'Anatomy'],
                              query_short_forms=[short_form],
                              clauses=[self.term(),
@@ -406,18 +412,24 @@ class QueryLibrary:
                                       self.xrefs(),
                                       self.channel_image(),
                                       self.related_individuals()],
-                             q_name='Get JSON for Individual:Anatomy',
+                             q_name=q_name,
                              pretty_print=pretty_print)  # Is Anatomy label sufficient here
 
-    def license_query(self, short_form, pretty_print = False):
+    def license_query(self, short_form,
+                      *args,
+                      pretty_print=False,
+                      q_name='Get JSON for License'):
         return query_builder(query_labels=['License'],
                              query_short_forms=[short_form],
                              clauses=[self.term(
-                             return_extensions=roll_license_return_dict('primary'))],
-                             q_name='Get JSON for License',
+                                return_extensions=roll_license_return_dict('primary'))],
+                             q_name=q_name,
                              pretty_print=pretty_print)
 
-    def class_query(self, short_form, pretty_print=False):
+    def class_query(self, short_form,
+                    *args,
+                    pretty_print=False,
+                    q_name='Get JSON for Class'):
         return query_builder(query_labels=['Class', 'Anatomy'],
                              query_short_forms=[short_form],
                              clauses=[self.term(),
@@ -427,10 +439,11 @@ class QueryLibrary:
                                       self.anatomy_channel_image(),
                                       self.pub_syn(),
                                       self.def_pubs()],
-                             q_name='Get JSON for Class',
+                             q_name=q_name,
                              pretty_print=pretty_print)
 
-    def dataset_query(self, short_form, pretty_print=False):
+    def dataset_query(self, short_form, *args, pretty_print=False,
+                      q_name='Get JSON for DataSet'):
         return query_builder(query_labels=['DataSet'],
                              query_short_forms=[short_form],
                              clauses=[self.term(
@@ -442,10 +455,11 @@ class QueryLibrary:
                                     self.xrefs(),
                                     self.license(),
                                     self.pub()],
-                             q_name='Get JSON for DataSet',
+                             q_name=q_name,
                              pretty_print=pretty_print)
 
-    def template_query(self, short_form, pretty_print=False):
+    def template_query(self, short_form, *args, pretty_print=False,
+                       q_name='Get JSON for Template'):
         return query_builder(query_labels=['Template'],
                              query_short_forms=[short_form],
                              clauses=[self.term(),
@@ -457,10 +471,10 @@ class QueryLibrary:
                                       self.xrefs(),
                                       self.related_individuals()
                                       ],
-                             q_name='Get JSON for Template',
+                             q_name=q_name,
                              pretty_print=pretty_print)
 
-    def anat_2_ep_query(self, short_forms, pretty_print=False):
+    def anat_2_ep_query(self, short_forms, *args, pretty_print=False):
         # we want images of eps (ep, returned by self.anat_2_ep_wrapper())
         aci = self.anatomy_channel_image()
         aci.__setattr__('pvar', 'ep')
@@ -472,7 +486,7 @@ class QueryLibrary:
                              q_name='Get JSON for anat_2_ep query',
                              pretty_print=pretty_print)
 
-    def ep_2_anat_query(self, short_form, pretty_print=False):
+    def ep_2_anat_query(self, short_form, *args, pretty_print=False):
         # columns: anatomy,
         aci = self.anatomy_channel_image()
         # We want images of anat, returned by self.anat_2_ep_wrapper())
@@ -492,6 +506,29 @@ class QueryLibrary:
                                       aci],
                              q_name='Get JSON for ep_2_anat query',
                              pretty_print=pretty_print)
+
+
+def term_info_export():
+    # Generate a JSON with TermInto queries
+    ql = QueryLibrary()
+    query_methods = ['anatomical_ind_query',
+                     'class_query',
+                     'dataset_query',
+                     'license_query',
+                     'template_query']
+
+    out = {}
+    for qm in query_methods:
+        # This whole approach feels a bit hacky...
+        qf = getattr(ql, qm)
+        q_name = qf.__kwdefaults__['q_name']
+        q = qf(short_form='$ID')
+        out[q_name] = saxutils.quoteattr(q)
+    return json.dumps(out)
+
+
+
+
 
 
 
