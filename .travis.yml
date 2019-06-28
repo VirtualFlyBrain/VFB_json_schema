@@ -9,11 +9,11 @@ python:
 env:
   matrix:
   - VFBPDB=pdb.virtualflybrain.org
-    RUNTESTS='vfb_query_builder.test.results_schema_tests'
+    RUNTESTS='vfb_query_builder.test.results_schema_tests vfb_query_builder.test.results_schema_tests'
   - VFBPDB=pdb-alpha.virtualflybrain.org
     RUNTESTS='vfb_query_builder.test.results_schema_tests vfb_query_builder.test.TermInfo_schema_tests'
   - VFBPDB=pdb-dev.virtualflybrain.org
-    RUNTESTS='vfb_query_builder.test.results_schema_tests vfb_query_builder.test.TermInfo_schema_tests vfb_query_builder.test.query_roller_tests'
+    RUNTESTS='vfb_query_builder.test.results_schema_tests vfb_query_builder.test.TermInfo_schema_tests vfb_query_builder.query_roller.term_info_export()'
 
 install:
   - pip install -r requirements.txt
