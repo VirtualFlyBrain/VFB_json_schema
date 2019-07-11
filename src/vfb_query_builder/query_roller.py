@@ -430,7 +430,7 @@ class QueryLibrary:
                     *args,
                     pretty_print=False,
                     q_name='Get JSON for Class'):
-        return query_builder(query_labels=['Class', 'Anatomy'],
+        return query_builder(query_labels=['Class'],
                              query_short_forms=[short_form],
                              clauses=[self.term(),
                                       self.parents(),
