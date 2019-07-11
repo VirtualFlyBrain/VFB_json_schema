@@ -242,7 +242,7 @@ class QueryLibrary:
 
     def relationships(self): return (Clause(vars=["relationships"],
                                             MATCH=Template("OPTIONAL MATCH "
-                                                           "(o)<-[r {type:'Related'}]-($pvar$labels)"),
+                                                           "(o:Class)<-[r {type:'Related'}]-($pvar$labels)"),
                                             WITH="CASE WHEN o IS NULL THEN [] "
                                                  "ELSE COLLECT ({ relation: %s, object: %s }) "
                                                  "END AS relationships " % (roll_min_edge_info("r"),
@@ -435,6 +435,7 @@ class QueryLibrary:
                              clauses=[self.term(),
                                       self.parents(),
                                       self.relationships(),
+                                      self.related_individuals(),
                                       self.xrefs(),
                                       self.anatomy_channel_image(),
                                       self.pub_syn(),
