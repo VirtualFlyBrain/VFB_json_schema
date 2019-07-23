@@ -187,9 +187,9 @@ class QueryLibrary:
 
     def anat_2_ep_wrapper(self):
         return Clause(
-            MATCH=Template("MATCH (ep$labels)<-[ar:overlaps|part_of]-(:Individual)"
+            MATCH=Template("MATCH (ep:Class:Expression_pattern)<-[ar:overlaps|part_of]-(:Individual)"
                            "-[:INSTANCEOF]->(anat:Class) WHERE anat.short_form in $ssf "
-                           "WITH DISTINCT collect(ar.pub) as pubs, anat, ep "
+                           "WITH DISTINCT collect(DISTINCT ar.pub) as pubs, anat, ep "
                            "UNWIND pubs as p MATCH (pub:pub { short_form: p}) "),
             WITH="anat, ep, collect(%s) as pubs" % roll_pub_return("pub"),
             vars=['pubs'],
