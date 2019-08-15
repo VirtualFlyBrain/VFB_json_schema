@@ -34,7 +34,7 @@ script:
       /bin/sed -i s/FAIL/\\e\[1\;31mFAIL\\e\[0m/g log.log;
       /bin/sed -i s/Validation\ Passes/\\e\[1\;32mValidation\ Passes\\e\[0m/g log.log;
       cat log.log;
-      if [ grep -q FAIL log.log ]; 
+      if grep -q FAIL log.log; 
       then 
         exit 1;
       fi;
