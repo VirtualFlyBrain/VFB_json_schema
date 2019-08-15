@@ -29,6 +29,14 @@ script:
   - |
     for TEST in $RUNTESTS;
     do
-      python -m $TEST;
+      /bin/echo -e "\e[1;35mRunning $TEST\e[0m" > log.log;
+      python -m $TEST >> log.log;
+      /bin/sed -i s/FAIL/\\e\[1\;31mFAIL\\e\[0m/g log.log;
+      /bin/sed -i s/Validation\ Passes/\\e\[1\;32mValidation\ Passes\\e\[0m/g log.log;
+      cat log.log;
+      if grep -q FAIL "$File"; 
+      then 
+        exit 1;
+      fi;
     done;
 
