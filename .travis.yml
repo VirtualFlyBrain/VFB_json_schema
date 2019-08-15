@@ -31,10 +31,16 @@ script:
     do
       /bin/echo -e "\e[1;35mRunning $TEST\e[0m"
       python -m $TEST 2> log.log
-      cat log.log | sed -e "s@FAIL@\\\e[1;31mFAIL\\\e[0m@g" | sed -e "s@Validation\ Passes@\\\e[1;32mValidation\ Passes\\\e[0m@g" | sed -e "s@OK@\\\e[1;32mOK\\\e[0m@g" | sed -e "s@\(Running\ \[.*\]\)@\\\e[1;36m\1\\\e[0m@g" 
       if grep -q FAIL log.log; 
       then 
+        /bin/echo -e "\e[1;31m";
+        cat log.log
+        /bin/echo -e "\e[0m";
         exit 1;
+      else
+        /bin/echo -e "\e[1;32m";
+        cat log.log
+        /bin/echo -e "\e[0m";
       fi;
       rm log.log;
     done;
