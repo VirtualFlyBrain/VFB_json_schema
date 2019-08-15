@@ -36,7 +36,7 @@ script:
       /bin/sed -i s/OK/\e[1;32mOK\e[0m/g log.log;
       /bin/sed -i "s/(Running\ \[.*\])/\e[1;36m\1\e[0m/g" log.log;
       cat log.log;
-      if grep -q FAIL log.log; 
+      if /bin/grep -q FAIL log.log; 
       then 
         exit 1;
       fi;
