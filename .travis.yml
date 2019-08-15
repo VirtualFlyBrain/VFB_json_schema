@@ -33,13 +33,11 @@ script:
       python -m $TEST 2> log.log
       if grep -q FAIL log.log; 
       then 
-        /bin/echo -e "\e[1;31m";
-        cat log.log
+        /bin/echo -e "\e[1;31m$(cat log.log)";
         /bin/echo -e "\e[0m";
         exit 1;
       else
-        /bin/echo -e "\e[1;32m";
-        cat log.log
+        /bin/echo -e "\e[1;32m$(cat log.log)";
         /bin/echo -e "\e[0m";
       fi;
       rm log.log;
