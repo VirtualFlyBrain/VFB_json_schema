@@ -219,6 +219,13 @@ class QueryLibrary:
                       node_vars=['ds'],
                       RETURN="%s as dataset" % (roll_min_node_info('ds')))
 
+    def all_datasets_wrapper(self):
+        return Clause(MATCH=Template("MATCH (ds:DataSet)"),
+                      WITH="ds",
+                      vars=[],
+                      node_vars=['ds'],
+                      RETURN="%s as dataset" % (roll_min_node_info('ds')))
+
     def xrefs(self):
         match_self_xref = "OPTIONAL MATCH (s:Site { short_form: primary.self_xref }) "
         match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-($pvar$labels) "
@@ -523,6 +530,10 @@ class QueryLibrary:
     def template_2_datasets_query(self, short_form):
         aci = self.anatomy_channel_image()
         aci.__setattr__('pvar', 'ds')
+        # In the absence of extra tools available for Neo4j3.n
+        # We can't set limits on numbers of images.
+        # For this reason, we may have to remove aci from this
+        # query for now.  Maybe add counts instead for now?
         aci.__setattr__('limit', '')
         pub = self.pub()
         pub.__setattr__('pvar', 'ds')
@@ -534,6 +545,27 @@ class QueryLibrary:
                                       aci,
                                       pub,
                                       li])
+
+    def all_datasets_query(self):
+        aci = self.anatomy_channel_image()
+        aci.__setattr__('pvar', 'ds')
+        # In the absence of extra tools available for Neo4j3.n
+        # We can't set limits on numbers of images.
+        # For this reason, we may have to remove aci from this
+        # query for now.  Maybe add counts instead for now?
+        aci.__setattr__('limit', '')
+        pub = self.pub()
+        pub.__setattr__('pvar', 'ds')
+        li =self.license()
+        li.__setattr__('pvar', 'ds')
+
+        return query_builder(clauses=[self.all_datasets_wrapper(),
+                                      aci,
+                                      pub,
+                                      li])
+
+
+
 def term_info_export():
     # Generate a JSON with TermInto queries
     ql = QueryLibrary()
