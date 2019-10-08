@@ -210,6 +210,15 @@ class QueryLibrary:
 
     # XREFS
 
+    def template_2_datasets_wrapper(self):
+        return Clause(MATCH=Template("MATCH (t:Template)<-[depicts]-(tc:Template)-"
+                                     "[:in_register_with]-(c:Individual)-[:depicts]"
+                                     "->(ai:Individual)-[:has_source]->(ds:DataSet) WHERE t.short_form in $ssf"),
+                      WITH="distinct ds",
+                      vars=[],
+                      node_vars=['ds'],
+                      RETURN="%s as dataset" % (roll_min_node_info('ds')))
+
     def xrefs(self):
         match_self_xref = "OPTIONAL MATCH (s:Site { short_form: primary.self_xref }) "
         match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-($pvar$labels) "
@@ -242,7 +251,7 @@ class QueryLibrary:
 
     def relationships(self): return (Clause(vars=["relationships"],
                                             MATCH=Template("OPTIONAL MATCH "
-                                                           "(o:Class)<-[r {type:'Related'}]-($pvar$labels)"),
+                                                           "(o)<-[r {type:'Related'}]-($pvar$labels)"),
                                             WITH="CASE WHEN o IS NULL THEN [] "
                                                  "ELSE COLLECT ({ relation: %s, object: %s }) "
                                                  "END AS relationships " % (roll_min_edge_info("r"),
@@ -353,24 +362,28 @@ class QueryLibrary:
                            "scope: coalesce(rp.scope, ''), type: coalesce(rp.cat,'') } "
 
 
-    def def_pubs(self):  return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
-                                                      "[rp:has_reference { typ: 'def'}]->(p:pub) "),
-                                       WITH="CASE WHEN p is null THEN "
-                                            "[] ELSE collect(" + self._pub_return + ") END AS def_pubs",
-                                       vars=['def_pubs'])
+    def def_pubs(self):
+        return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
+                                     "[rp:has_reference { typ: 'def'}]->(p:pub) "),
+                      WITH="CASE WHEN p is null THEN "
+                            "[] ELSE collect(" + self._pub_return
+                           + ") END AS def_pubs",
+                      vars=['def_pubs'])
 
-    def pub_syn(self):  return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
-                                                     "[rp:has_reference { typ: 'syn'}]->(p:pub) "),
+    def pub_syn(self):
+        return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
+                                     "[rp:has_reference { typ: 'syn'}]->(p:pub) "),
                                       WITH="CASE WHEN p is null THEN [] "
                                            "ELSE collect({ pub: %s, synonym: %s }) END AS pub_syn"
                                            % (self._pub_return, self._syn_return),
                                       vars=['pub_syn'])
 
-    def pub(self):  return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)"
-                                                 "-[rp:has_reference]->(p:pub) "),
+    def pub(self):
+        return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)"
+                                     "-[rp:has_reference]->(p:pub) "),
                                   WITH="CASE WHEN p is null THEN [] ELSE "
-                                       "collect(" + self._pub_return + ") END AS def_pubs",
-                                  vars=['def_pubs'])
+                                       "collect(" + self._pub_return + ") END AS pub",
+                                  vars=['pub'])
 
 
     def dataSet_license(self):
@@ -430,12 +443,11 @@ class QueryLibrary:
                     *args,
                     pretty_print=False,
                     q_name='Get JSON for Class'):
-        return query_builder(query_labels=['Class'],
+        return query_builder(query_labels=['Class', 'Anatomy'],
                              query_short_forms=[short_form],
                              clauses=[self.term(),
                                       self.parents(),
                                       self.relationships(),
-                                      self.related_individuals(),
                                       self.xrefs(),
                                       self.anatomy_channel_image(),
                                       self.pub_syn(),
@@ -508,7 +520,20 @@ class QueryLibrary:
                              q_name='Get JSON for ep_2_anat query',
                              pretty_print=pretty_print)
 
+    def template_2_datasets_query(self, short_form):
+        aci = self.anatomy_channel_image()
+        aci.__setattr__('pvar', 'ds')
+        aci.__setattr__('limit', '')
+        pub = self.pub()
+        pub.__setattr__('pvar', 'ds')
+        li =self.license()
+        li.__setattr__('pvar', 'ds')
 
+        return query_builder(query_short_forms=[short_form],
+                             clauses=[self.template_2_datasets_wrapper(),
+                                      aci,
+                                      pub,
+                                      li])
 def term_info_export():
     # Generate a JSON with TermInto queries
     ql = QueryLibrary()

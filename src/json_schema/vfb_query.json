@@ -9,6 +9,9 @@
     "anatomy": {
       "$ref": "mod.json#definitions/minimal_entity_info"
     },
+    "dataset": {
+      "$ref": "mod.json#definitions/minimal_entity_info"
+    },
     "pub": {
       "$ref": "mod.json#definitions/pub"
     },

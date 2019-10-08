@@ -25,6 +25,11 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                     query=query, single=False)
 
+    def test_template_2_datasets_query(self):
+        query = self.ql.template_2_datasets_query('VFB_00050000')
+        print("Testing and printing first result in list only.")
+        r = self.qw.test(t=self,
+                    query=query, single=False)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
