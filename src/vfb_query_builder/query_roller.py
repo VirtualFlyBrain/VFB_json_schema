@@ -156,9 +156,11 @@ def roll_node_map(var: str, d: dict, typ = ''):
             raise Exception('Unknown type: %s should be one or core, extended_core' % typ)
     return '{ ' + ', '.join([' : '.join(kv) for kv in d.items()]) + ' }'
 
-class QueryLibrary:
+class QueryLibraryCore:
 
-    # Using class to wrap for convenience. Could do the same with a set of static methods.
+    # Using class to wrap for convenience.
+    # Could do the same with a set of static methods.
+    # This class contains methods for generating query clauses.
 
     def __init__(self):
 
@@ -184,47 +186,6 @@ class QueryLibrary:
                 var = 'primary') + " AS term")
 
     # EXPRESSION QUERIES
-
-    def anat_2_ep_wrapper(self):
-        return Clause(
-            MATCH=Template("MATCH (ep:Class:Expression_pattern)<-[ar:overlaps|part_of]-(:Individual)"
-                           "-[:INSTANCEOF]->(anat:Class) WHERE anat.short_form in $ssf "
-                           "WITH DISTINCT collect(DISTINCT ar.pub) as pubs, anat, ep "
-                           "UNWIND pubs as p MATCH (pub:pub { short_form: p}) "),
-            WITH="anat, ep, collect(%s) as pubs" % roll_pub_return("pub"),
-            vars=['pubs'],
-            node_vars=['anat', 'ep'],
-            RETURN='%s as anatomy, %s AS expression_pattern' % (roll_min_node_info('anat'), roll_min_node_info('ep')))
-
-    def ep_2_anat_wrapper(self):
-        return Clause(
-            MATCH=Template("MATCH (ep:Expression_pattern:Class)<-[ar:overlaps|part_of]-(anoni:Individual)"
-                           "-[:INSTANCEOF]->(anat:Class) WHERE ep.short_form in $ssf "
-                           "WITH  anoni, anat, ar "
-                           "OPTIONAL MATCH (p:pub { short_form: ar.pub}) "),
-            WITH="anat, anoni, %s AS pub" % roll_pub_return("p"),
-            vars=['pub'],
-            node_vars=['anoni', 'anat'],
-            RETURN='%s AS anatomy' % (roll_min_node_info('anat')))
-
-
-    # XREFS
-
-    def template_2_datasets_wrapper(self):
-        return Clause(MATCH=Template("MATCH (t:Template)<-[depicts]-(tc:Template)-"
-                                     "[:in_register_with]-(c:Individual)-[:depicts]"
-                                     "->(ai:Individual)-[:has_source]->(ds:DataSet) WHERE t.short_form in $ssf"),
-                      WITH="distinct ds",
-                      vars=[],
-                      node_vars=['ds'],
-                      RETURN="%s as dataset" % (roll_min_node_info('ds')))
-
-    def all_datasets_wrapper(self):
-        return Clause(MATCH=Template("MATCH (ds:DataSet)"),
-                      WITH="ds",
-                      vars=[],
-                      node_vars=['ds'],
-                      RETURN="%s as dataset" % (roll_min_node_info('ds')))
 
     def xrefs(self):
         match_self_xref = "OPTIONAL MATCH (s:Site { short_form: primary.self_xref }) "
@@ -416,12 +377,18 @@ class QueryLibrary:
                                                            d = roll_license_return_dict('l')),
             vars=['license'])
 
-    # COMPOUND QUERIES
 
-    def anatomical_ind_query(self, short_form,
-                             *args,
-                             pretty_print=False,
-                             q_name='Get JSON for Individual:Anatomy'):
+class QueryLibrary(QueryLibraryCore):
+
+    # Class wrapping TermInfo queries & queries -> results tables.
+
+
+    ## TermInfo
+
+    def anatomical_ind_term_info(self, short_form,
+                                 *args,
+                                 pretty_print=False,
+                                 q_name='Get JSON for Individual:Anatomy'):
 
         return query_builder(query_labels=['Individual', 'Anatomy'],
                              query_short_forms=[short_form],
@@ -435,10 +402,10 @@ class QueryLibrary:
                              q_name=q_name,
                              pretty_print=pretty_print)  # Is Anatomy label sufficient here
 
-    def license_query(self, short_form,
-                      *args,
-                      pretty_print=False,
-                      q_name='Get JSON for License'):
+    def license_term_info(self, short_form,
+                          *args,
+                          pretty_print=False,
+                          q_name='Get JSON for License'):
         return query_builder(query_labels=['License'],
                              query_short_forms=[short_form],
                              clauses=[self.term(
@@ -446,10 +413,10 @@ class QueryLibrary:
                              q_name=q_name,
                              pretty_print=pretty_print)
 
-    def class_query(self, short_form,
-                    *args,
-                    pretty_print=False,
-                    q_name='Get JSON for Class'):
+    def class_term_info(self, short_form,
+                        *args,
+                        pretty_print=False,
+                        q_name='Get JSON for Class'):
         return query_builder(query_labels=['Class', 'Anatomy'],
                              query_short_forms=[short_form],
                              clauses=[self.term(),
@@ -462,8 +429,8 @@ class QueryLibrary:
                              q_name=q_name,
                              pretty_print=pretty_print)
 
-    def dataset_query(self, short_form, *args, pretty_print=False,
-                      q_name='Get JSON for DataSet'):
+    def dataset_term_info(self, short_form, *args, pretty_print=False,
+                          q_name='Get JSON for DataSet'):
         return query_builder(query_labels=['DataSet'],
                              query_short_forms=[short_form],
                              clauses=[self.term(
@@ -478,8 +445,8 @@ class QueryLibrary:
                              q_name=q_name,
                              pretty_print=pretty_print)
 
-    def template_query(self, short_form, *args, pretty_print=False,
-                       q_name='Get JSON for Template'):
+    def template_term_info(self, short_form, *args, pretty_print=False,
+                           q_name='Get JSON for Template'):
         return query_builder(query_labels=['Template'],
                              query_short_forms=[short_form],
                              clauses=[self.term(),
@@ -493,6 +460,49 @@ class QueryLibrary:
                                       ],
                              q_name=q_name,
                              pretty_print=pretty_print)
+
+    #
+
+    def anat_2_ep_wrapper(self):
+        return Clause(
+            MATCH=Template("MATCH (ep:Class:Expression_pattern)<-[ar:overlaps|part_of]-(:Individual)"
+                           "-[:INSTANCEOF]->(anat:Class) WHERE anat.short_form in $ssf "
+                           "WITH DISTINCT collect(DISTINCT ar.pub) as pubs, anat, ep "
+                           "UNWIND pubs as p MATCH (pub:pub { short_form: p}) "),
+            WITH="anat, ep, collect(%s) as pubs" % roll_pub_return("pub"),
+            vars=['pubs'],
+            node_vars=['anat', 'ep'],
+            RETURN='%s as anatomy, %s AS expression_pattern' % (roll_min_node_info('anat'), roll_min_node_info('ep')))
+
+    def ep_2_anat_wrapper(self):
+        return Clause(
+            MATCH=Template("MATCH (ep:Expression_pattern:Class)<-[ar:overlaps|part_of]-(anoni:Individual)"
+                           "-[:INSTANCEOF]->(anat:Class) WHERE ep.short_form in $ssf "
+                           "WITH  anoni, anat, ar "
+                           "OPTIONAL MATCH (p:pub { short_form: ar.pub}) "),
+            WITH="anat, anoni, %s AS pub" % roll_pub_return("p"),
+            vars=['pub'],
+            node_vars=['anoni', 'anat'],
+            RETURN='%s AS anatomy' % (roll_min_node_info('anat')))
+
+        # XREFS
+
+    def template_2_datasets_wrapper(self):
+        return Clause(MATCH=Template("MATCH (t:Template)<-[depicts]-(tc:Template)-"
+                                     "[:in_register_with]-(c:Individual)-[:depicts]"
+                                     "->(ai:Individual)-[:has_source]->(ds:DataSet) WHERE t.short_form in $ssf"),
+                      WITH="distinct ds",
+                      vars=[],
+                      node_vars=['ds'],
+                      RETURN="%s as dataset" % (roll_min_node_info('ds')))
+
+    def all_datasets_wrapper(self):
+        return Clause(MATCH=Template("MATCH (ds:DataSet)"),
+                      WITH="ds",
+                      vars=[],
+                      node_vars=['ds'],
+                      RETURN="%s as dataset" % (roll_min_node_info('ds')))
+
 
     def anat_2_ep_query(self, short_forms, *args, pretty_print=False):
         # we want images of eps (ep, returned by self.anat_2_ep_wrapper())
@@ -542,7 +552,7 @@ class QueryLibrary:
 
         return query_builder(query_short_forms=[short_form],
                              clauses=[self.template_2_datasets_wrapper(),
-                                      aci,
+                                      #aci, # commenting as too slow w/o limit
                                       pub,
                                       li])
 
@@ -556,11 +566,11 @@ class QueryLibrary:
         aci.__setattr__('limit', '')
         pub = self.pub()
         pub.__setattr__('pvar', 'ds')
-        li =self.license()
+        li = self.license()
         li.__setattr__('pvar', 'ds')
 
         return query_builder(clauses=[self.all_datasets_wrapper(),
-                                      aci,
+                                      #aci # commenting as too slow w/o limit
                                       pub,
                                       li])
 
