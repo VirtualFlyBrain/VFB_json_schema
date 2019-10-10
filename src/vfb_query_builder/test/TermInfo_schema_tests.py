@@ -152,7 +152,7 @@ class TermInfoRollerTest(unittest.TestCase):
         query = query_builder(query_labels=['DataSet'],
                               query_short_forms=['Ito2013'],
                               clauses=[self.ql.term(),
-                                       self.ql.pub()])
+                                       self.ql.pubs()])
         r = self.qw.test(t=self,
                          query=query)
 

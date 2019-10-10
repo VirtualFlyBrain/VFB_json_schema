@@ -346,12 +346,12 @@ class QueryLibraryCore:
                                            % (self._pub_return, self._syn_return),
                                       vars=['pub_syn'])
 
-    def pub(self):
+    def pubs(self):
         return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)"
                                      "-[rp:has_reference]->(p:pub) "),
                                   WITH="CASE WHEN p is null THEN [] ELSE "
-                                       "collect(" + self._pub_return + ") END AS pub",
-                                  vars=['pub'])
+                                       "collect(" + self._pub_return + ") END AS pubs",
+                                  vars=['pubs'])
 
 
     def dataSet_license(self):
@@ -441,7 +441,7 @@ class QueryLibrary(QueryLibraryCore):
                                     self.anatomy_channel_image(),
                                     self.xrefs(),
                                     self.license(),
-                                    self.pub()],
+                                    self.pubs()],
                              q_name=q_name,
                              pretty_print=pretty_print)
 
@@ -545,7 +545,7 @@ class QueryLibrary(QueryLibraryCore):
         # For this reason, we may have to remove aci from this
         # query for now.  Maybe add counts instead for now?
         aci.__setattr__('limit', '')
-        pub = self.pub()
+        pub = self.pubs()
         pub.__setattr__('pvar', 'ds')
         li =self.license()
         li.__setattr__('pvar', 'ds')
@@ -564,7 +564,7 @@ class QueryLibrary(QueryLibraryCore):
         # For this reason, we may have to remove aci from this
         # query for now.  Maybe add counts instead for now?
         aci.__setattr__('limit', '')
-        pub = self.pub()
+        pub = self.pubs()
         pub.__setattr__('pvar', 'ds')
         li = self.license()
         li.__setattr__('pvar', 'ds')

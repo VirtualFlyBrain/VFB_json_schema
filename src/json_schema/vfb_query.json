@@ -13,10 +13,7 @@
       "$ref": "mod.json#definitions/minimal_entity_info"
     },
     "pub": {
-      "type": "array",
-      "items": {
-        "$ref": "mod.json#definitions/pub"
-      }
+      "$ref": "mod.json#definitions/pub"
     },
     "anatomy_channel_image": {
       "type": "array",
