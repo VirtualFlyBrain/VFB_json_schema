@@ -372,6 +372,22 @@ class QueryLibrary:
                                        "collect(" + self._pub_return + ") END AS def_pubs",
                                   vars=['def_pubs'])
 
+    def neuron_split(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH (:Class { label: 'intersectional expression pattern'})"
+                           "<-[:SUBCLASSOF]-(ep:Class)<-[ar:part_of]-(anoni:Individual)"
+                           "-[:INSTANCEOF]->($pvar)"),
+            WITH="COLLECT(%s) as targeting_splits" % roll_min_node_info("ep"),
+            vars=['targeting_splits'])
+
+    def split_neuron(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH (:Class { label: 'intersectional expression pattern'})"
+                           "<-[:SUBCLASSOF]-($pvar)<-[ar:part_of]-(anoni:Individual)"
+                           "-[:INSTANCEOF]->(n:Neuron)"),
+            WITH="COLLECT(%s) as target_neurons" % roll_min_node_info("n"),
+            vars=['target_neurons'])
+
 
     def dataSet_license(self):
         return Clause(
@@ -429,7 +445,10 @@ class QueryLibrary:
     def class_query(self, short_form,
                     *args,
                     pretty_print=False,
-                    q_name='Get JSON for Class'):
+                    q_name='Get JSON for Class',
+                    additional_clauses=None):
+        if additional_clauses is None:
+            additional_clauses = []
         return query_builder(query_labels=['Class'],
                              query_short_forms=[short_form],
                              clauses=[self.term(),
@@ -439,9 +458,27 @@ class QueryLibrary:
                                       self.xrefs(),
                                       self.anatomy_channel_image(),
                                       self.pub_syn(),
-                                      self.def_pubs()],
+                                      self.def_pubs()] + additional_clauses,
                              q_name=q_name,
                              pretty_print=pretty_print)
+
+    def neuron_class_query(self, short_form,
+                    *args,
+                    pretty_print=False,
+                    q_name="Get JSON for Neuron Class"):
+        return self.class_query(short_form, *args,
+                                q_name=q_name,
+                                pretty_print=pretty_print,
+                                additional_clauses=[self.neuron_split()])
+
+    def split_class_query(self, short_form,
+                    *args,
+                    pretty_print=False,
+                    q_name="Get JSON for Split Class"):
+        return self.class_query(short_form, *args,
+                                q_name=q_name,
+                                pretty_print=pretty_print,
+                                additional_clauses=[self.split_neuron()])
 
     def dataset_query(self, short_form, *args, pretty_print=False,
                       q_name='Get JSON for DataSet'):

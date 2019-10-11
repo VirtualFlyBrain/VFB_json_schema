@@ -80,14 +80,30 @@
         }
       }
     },
-    "template_channel": { "$ref": "mod.json#definitions/template_channel" },
+    "template_channel": {
+      "$ref": "mod.json#definitions/template_channel"
+    },
     "query": {
-      "type":  "string",
+      "type": "string",
       "description": "A descriptive name for the query used to generate this JSON."
     },
     "version": {
-      "type":  "string",
+      "type": "string",
       "description": "A version tag for the query used to generate this JSON."
+    },
+    "target_neurons": {
+      "description": "A list of target neurons for this split driver",
+      "type": "array",
+      "items": {
+        "$ref": "mod.json#definitions/minimal_entity_info"
+      }
+    },
+    "targeting_splits": {
+      "description": "A list of splits that target this neuron",
+      "type": "array",
+      "items": {
+        "$ref": "mod.json#definitions/minimal_entity_info"
+      }
     }
   }
 }

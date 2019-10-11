@@ -185,6 +185,16 @@ class TermInfoRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
+    def test_neuron_class(self):
+        query = self.ql.neuron_class_query(short_form="FBbt_00047609", pretty_print=True)
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_split_class(self):
+        query = self.ql.split_class_query(short_form="VFBexp_FBtp0123136FBtp0119953", pretty_print=True)
+        r = self.qw.test(t=self,
+                         query=query)
+
     def tearDown(self):
         return
 
