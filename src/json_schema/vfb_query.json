@@ -12,6 +12,9 @@
     "dataset": {
       "$ref": "mod.json#definitions/minimal_entity_info"
     },
+    "dataset_counts":  {
+      "$ref": "mod.json#definitions/dataset_counts"
+    },
     "pub": {
       "$ref": "mod.json#definitions/pub"
     },

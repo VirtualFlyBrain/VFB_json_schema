@@ -48,6 +48,9 @@
         "$ref": "mod.json#definitions/dataset_license"
       }
     },
+    "dataset_counts":  {
+      "$ref": "mod.json#definitions/dataset_counts"
+    },
     "relationships": {
       "type": "array",
       "items": {
