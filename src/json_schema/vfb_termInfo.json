@@ -42,6 +42,12 @@
         "$ref": "mod.json#definitions/license"
       }
     },
+    "pubs": {
+      "type": "array",
+      "items": {
+        "$ref": "mod.json#definitions/pub"
+      }
+    },
     "dataset_license": {
       "type": "array",
       "items": {
