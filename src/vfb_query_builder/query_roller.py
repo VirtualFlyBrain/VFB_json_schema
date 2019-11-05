@@ -30,7 +30,9 @@ class Clause:
         $labels: labels of primary matched term.  Can be used to modify
                  labels of $pvar$labels in other clauses in order
                  to further restrict.
-        $pvar$labels: pvar;
+        $pvar: Binding for variable (node_var) from previous clause.
+        By default bound to 'primary' but may be bound to any node_var specified
+            in a previous clause.
         $ssf: starting short forms
         $v: vars
     WITH: A cypher string that converts variable output of the MATCH
@@ -40,8 +42,7 @@ class Clause:
     vars: a list of variable names for data structures in with statement.
           These will be interpolated into subsequent clauses and the return statement
     node_vars: a list of variables returned by the MATCH statement,
-              referring to whole nodes, to be interpolated
-               into subsequent clauses.
+              referring to whole nodes, to be interpolated into subsequent clauses.
     RETURN: A cypher string that converts variables referenced in node_vars
     into a data structure in the final return statement of the generated cypher query.
     """
@@ -178,10 +179,10 @@ class QueryLibrary:
             MATCH=Template("MATCH (primary$labels) WHERE primary.short_form in $ssf "),
             WITH='primary',
             node_vars=['primary'],
-            RETURN= roll_node_map(
-                d = return_extensions,
+            RETURN=roll_node_map(
+                d=return_extensions,
                 typ='extended_core',
-                var = 'primary') + " AS term")
+                var='primary') + " AS term")
 
     # EXPRESSION QUERIES
 
