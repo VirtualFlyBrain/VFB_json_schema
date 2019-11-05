@@ -149,7 +149,7 @@ def roll_node_map(var: str, d: dict, typ = ''):
         elif typ == 'extended_core':
             d.update({ 'core': roll_min_node_info(var),
                        'description': 'coalesce(%s.description, [])' % var,
-                       "comment": "coalesce(%s.`annotation - comment`, [])" % var
+                       "comment": "coalesce(%s.`annotation-comment`, [])" % var
                     })
 
         else:
