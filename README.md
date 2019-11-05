@@ -9,4 +9,4 @@ VFB json schema spec + code for rolling queries producing VFB json schema + rela
 [1]: https://travis-matrix-badges.herokuapp.com/repos/VirtualFlyBrain/VFB_json_schema/branches/master/1
 [2]: https://travis-matrix-badges.herokuapp.com/repos/VirtualFlyBrain/VFB_json_schema/branches/master/2
 [3]: https://travis-matrix-badges.herokuapp.com/repos/VirtualFlyBrain/VFB_json_schema/branches/master/3
-[6]: https://travis-ci.org/VFB_json_schema/pipeline
+[6]: https://travis-ci.org/VirtualFlyBrain/VFB_json_schema
