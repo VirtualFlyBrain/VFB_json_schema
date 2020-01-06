@@ -168,10 +168,10 @@ class QueryLibrary:
         self.dataset_spec_fields = {
         "link": "coalesce(%s.dataset_link, '')"
     }
-        self.license_spec_fields = {'icon' :  "coalesce(%s.license_logo, '')",
+        self.license_spec_fields = {'icon':  "coalesce(%s.license_logo, '')",
         'link' : "coalesce(%s.license_url, '')x"}
 
-    def term(self, return_extensions = None):
+    def term(self, return_extensions=None):
         if return_extensions is None:
           return_extensions = {}
         return Clause(
@@ -218,6 +218,7 @@ class QueryLibrary:
              "({ link_base: s.link_base, " \
              "accession: coalesce(%s, ''), " \
              "link_text: primary.label + ' on ' + s.label, " \
+             "homepage: coalesce(s.homepage, ''), " \
              "site: %s, icon: coalesce(s.link_icon_url, ''),  " \
              "link_postfix: coalesce(s.link_postfix, '')}) " # Should be $pvar$labels not primary, but need sub on WITH!
         xrs = "END AS self_xref, $v"  # Passing vars
