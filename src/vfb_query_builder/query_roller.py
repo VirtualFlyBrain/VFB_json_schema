@@ -30,7 +30,9 @@ class Clause:
         $labels: labels of primary matched term.  Can be used to modify
                  labels of $pvar$labels in other clauses in order
                  to further restrict.
-        $pvar$labels: pvar;
+        $pvar: Binding for variable (node_var) from previous clause.
+        By default bound to 'primary' but may be bound to any node_var specified
+            in a previous clause.
         $ssf: starting short forms
         $v: vars
     WITH: A cypher string that converts variable output of the MATCH
@@ -40,8 +42,7 @@ class Clause:
     vars: a list of variable names for data structures in with statement.
           These will be interpolated into subsequent clauses and the return statement
     node_vars: a list of variables returned by the MATCH statement,
-              referring to whole nodes, to be interpolated
-               into subsequent clauses.
+              referring to whole nodes, to be interpolated into subsequent clauses.
     RETURN: A cypher string that converts variables referenced in node_vars
     into a data structure in the final return statement of the generated cypher query.
     """
@@ -123,7 +124,7 @@ def roll_min_edge_info(var):
     """Rolls core JSON (specifying minimal info about an edge.
     var: the variable name for the edge within this cypher clause."""
     return "{ label: %s.label, " \
-           "iri: %s.uri, type: type(%s) } " % (var, var, var)  # short_forms are not present in OLS-PDB
+           "iri: %s.iri, type: type(%s) } " % (var, var, var)  # short_forms are not present in OLS-PDB
 
 
 
@@ -178,10 +179,10 @@ class QueryLibrary:
             MATCH=Template("MATCH (primary$labels) WHERE primary.short_form in $ssf "),
             WITH='primary',
             node_vars=['primary'],
-            RETURN= roll_node_map(
-                d = return_extensions,
+            RETURN=roll_node_map(
+                d=return_extensions,
                 typ='extended_core',
-                var = 'primary') + " AS term")
+                var='primary') + " AS term")
 
     # EXPRESSION QUERIES
 
@@ -373,6 +374,22 @@ class QueryLibrary:
                                        "collect(" + self._pub_return + ") END AS def_pubs",
                                   vars=['def_pubs'])
 
+    def neuron_split(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH (:Class { label: 'intersectional expression pattern'})"
+                           "<-[:SUBCLASSOF]-(ep:Class)<-[ar:part_of]-(anoni:Individual)"
+                           "-[:INSTANCEOF]->($pvar)"),
+            WITH="CASE WHEN ep IS NULL THEN [] ELSE COLLECT(%s) END AS targeting_splits" % roll_min_node_info("ep"),
+            vars=['targeting_splits'])
+
+    def split_neuron(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH (:Class { label: 'intersectional expression pattern'})"
+                           "<-[:SUBCLASSOF]-($pvar)<-[ar:part_of]-(anoni:Individual)"
+                           "-[:INSTANCEOF]->(n:Neuron)"),
+            WITH="CASE WHEN n IS NULL THEN [] ELSE COLLECT(%s) END AS target_neurons" % roll_min_node_info("n"),
+            vars=['target_neurons'])
+
 
     def dataSet_license(self):
         return Clause(
@@ -430,7 +447,10 @@ class QueryLibrary:
     def class_query(self, short_form,
                     *args,
                     pretty_print=False,
-                    q_name='Get JSON for Class'):
+                    q_name='Get JSON for Class',
+                    additional_clauses=None):
+        if additional_clauses is None:
+            additional_clauses = []
         return query_builder(query_labels=['Class'],
                              query_short_forms=[short_form],
                              clauses=[self.term(),
@@ -440,9 +460,27 @@ class QueryLibrary:
                                       self.xrefs(),
                                       self.anatomy_channel_image(),
                                       self.pub_syn(),
-                                      self.def_pubs()],
+                                      self.def_pubs()] + additional_clauses,
                              q_name=q_name,
                              pretty_print=pretty_print)
+
+    def neuron_class_query(self, short_form,
+                    *args,
+                    pretty_print=False,
+                    q_name="Get JSON for Neuron Class"):
+        return self.class_query(short_form, *args,
+                                q_name=q_name,
+                                pretty_print=pretty_print,
+                                additional_clauses=[self.neuron_split()])
+
+    def split_class_query(self, short_form,
+                    *args,
+                    pretty_print=False,
+                    q_name="Get JSON for Split Class"):
+        return self.class_query(short_form, *args,
+                                q_name=q_name,
+                                pretty_print=pretty_print,
+                                additional_clauses=[self.split_neuron()])
 
     def dataset_query(self, short_form, *args, pretty_print=False,
                       q_name='Get JSON for DataSet'):
