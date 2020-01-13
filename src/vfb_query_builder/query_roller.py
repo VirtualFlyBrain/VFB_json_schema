@@ -449,7 +449,7 @@ class QueryLibrary(QueryLibraryCore):
                     additional_clauses=None):
         if additional_clauses is None:
             additional_clauses = []
-        return query_builder(query_labels=['Class', 'Anatomy'],
+        return query_builder(query_labels=['Class'],
                              query_short_forms=[short_form],
                              clauses=[self.term(),
                                       self.parents(),
