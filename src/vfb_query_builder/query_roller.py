@@ -378,7 +378,7 @@ class QueryLibrary:
             MATCH=Template("OPTIONAL MATCH (:Class { label: 'intersectional expression pattern'})"
                            "<-[:SUBCLASSOF]-(ep:Class)<-[ar:part_of]-(anoni:Individual)"
                            "-[:INSTANCEOF]->($pvar)"),
-            WITH="COLLECT(%s) as targeting_splits" % roll_min_node_info("ep"),
+            WITH="CASE WHEN ep IS NULL THEN [] ELSE COLLECT(%s) END AS targeting_splits" % roll_min_node_info("ep"),
             vars=['targeting_splits'])
 
     def split_neuron(self):
@@ -386,7 +386,7 @@ class QueryLibrary:
             MATCH=Template("OPTIONAL MATCH (:Class { label: 'intersectional expression pattern'})"
                            "<-[:SUBCLASSOF]-($pvar)<-[ar:part_of]-(anoni:Individual)"
                            "-[:INSTANCEOF]->(n:Neuron)"),
-            WITH="COLLECT(%s) as target_neurons" % roll_min_node_info("n"),
+            WITH="CASE WHEN n IS NULL THEN [] ELSE COLLECT(%s) END AS target_neurons" % roll_min_node_info("n"),
             vars=['target_neurons'])
 
 
