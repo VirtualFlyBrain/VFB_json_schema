@@ -592,11 +592,11 @@ class QueryLibrary(QueryLibraryCore):
 def term_info_export():
     # Generate a JSON with TermInto queries
     ql = QueryLibrary()
-    query_methods = ['anatomical_ind_query',
-                     'class_query',
-                     'dataset_query',
-                     'license_query',
-                     'template_query']
+    query_methods = ['anatomical_ind_term_info',
+                     'class_term_info',
+                     'dataset_term_info',
+                     'license_term_info',
+                     'template_term_info']
 
     out = {}
     for qm in query_methods:
