@@ -5,9 +5,10 @@ import subprocess
 from xml.sax import saxutils
 import json
 
+
 def get_version_tag():
     tag = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'])
-    return tag.decode(encoding = 'ascii').rstrip()
+    return tag.decode(encoding='ascii').rstrip()
 
 
 @dataclass
@@ -76,7 +77,7 @@ class Clause:
 
 
 def query_builder(clauses: List[Clause], query_short_forms=None,
-                  query_labels=None, pretty_print=True, annotate = True, q_name = ''):
+                  query_labels=None, pretty_print=True, annotate=True, q_name=''):
     """clauses: A list of Clause objects. The first element in the list must be an initial clause.
     Initial clauses must have slot for short_forms """
 
@@ -126,55 +127,62 @@ def roll_min_edge_info(var):
     return "{ label: %s.label, " \
            "iri: %s.iri, type: type(%s) } " % (var, var, var)  # short_forms are not present in OLS-PDB
 
-
-
-def roll_license_return_dict(var):
-    return {'icon' :  "coalesce(%s.license_logo, '')" % var,
-        'link' : "coalesce(%s.license_url, '')" % var}
-
-def roll_dataset_return_dict(var, typ = ''):
-    return  {
-        "link": "coalesce(%s.dataset_link, '')" % var
-    }
-
 def roll_pub_return(var):
     s = Template("{ core: $core, "
                  "PubMed: coalesce($v.PMID, ''), "
                  "FlyBase: coalesce($v.FlyBase, ''), DOI: coalesce($v.DOI, '') }")
     return s.substitute(core=roll_min_node_info(var), v=var)
 
-def roll_node_map(var: str, d: dict, typ = ''):
+
+# We sometimes need to extend return from term with additional info from other clauses
+# For this it helps to contruct return as a dict
+
+def roll_license_return_dict(var):
+    return {'icon': "coalesce(%s.license_logo, '')" % var,
+            'link': "coalesce(%s.license_url, '')" % var}
+
+
+def roll_dataset_return_dict(var, typ=''):
+    return {
+        "link": "coalesce(%s.dataset_link, '')" % var,
+    }
+
+
+def roll_node_map(var: str, d: dict, typ=''):
     if typ:
-        if typ =='core':
-            d.update({ 'core': roll_min_node_info(var)})
+        if typ == 'core':
+            d.update({'core': roll_min_node_info(var)})
         elif typ == 'extended_core':
-            d.update({ 'core': roll_min_node_info(var),
-                       'description': 'coalesce(%s.description, [])' % var,
-                       "comment": "coalesce(%s.`annotation-comment`, [])" % var
-                    })
+            d.update({'core': roll_min_node_info(var),
+                      'description': 'coalesce(%s.description, [])' % var,
+                      "comment": "coalesce(%s.`annotation - comment`, [])" % var
+                      })
 
         else:
             raise Exception('Unknown type: %s should be one or core, extended_core' % typ)
     return '{ ' + ', '.join([' : '.join(kv) for kv in d.items()]) + ' }'
 
-class QueryLibrary:
 
-    # Using class to wrap for convenience. Could do the same with a set of static methods.
+class QueryLibraryCore:
+
+    # Using class to wrap for convenience.
+    # Could do the same with a set of static methods.
+    # This class contains methods for generating query clauses.
 
     def __init__(self):
-
         # Using methods for ease of reading code - so these can be next to queries where they apply.
         self._set_image_query_common_elements()
         self._set_pub_common_query_elements()
         self.dataset_spec_fields = {
-        "link": "coalesce(%s.dataset_link, '')"
-    }
-        self.license_spec_fields = {'icon':  "coalesce(%s.license_logo, '')",
-        'link' : "coalesce(%s.license_url, '')x"}
+            "link": "coalesce(%s.dataset_link, '')"
+        }
+        self.license_spec_fields = {'icon': "coalesce(%s.license_logo, '')",
+                                    'link': "coalesce(%s.license_url, '')x"
+                                    }
 
     def term(self, return_extensions=None):
         if return_extensions is None:
-          return_extensions = {}
+            return_extensions = {}
         return Clause(
             MATCH=Template("MATCH (primary$labels) WHERE primary.short_form in $ssf "),
             WITH='primary',
@@ -185,6 +193,328 @@ class QueryLibrary:
                 var='primary') + " AS term")
 
     # EXPRESSION QUERIES
+
+    def xrefs(self):
+        match_self_xref = "OPTIONAL MATCH (s:Site { short_form: primary.self_xref }) "
+        match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-($pvar$labels) "
+
+        xr = "CASE WHEN s IS NULL THEN %s ELSE COLLECT" \
+             "({ link_base: s.link_base, " \
+             "accession: coalesce(%s, ''), " \
+             "link_text: primary.label + ' on ' + s.label, " \
+             "homepage: coalesce(s.homepage, ''), " \
+             "site: %s, icon: coalesce(s.link_icon_url, ''),  " \
+             "link_postfix: coalesce(s.link_postfix, '')}) "  # Should be $pvar$labels not primary, but need sub on WITH!
+        xrs = "END AS self_xref, $v"  # Passing vars
+        xrx = "+ self_xref END AS xrefs"
+
+        return Clause(
+            MATCH=Template(' '.join([match_self_xref, "WITH", xr, xrs, match_ext_xref])
+                           % ('[]', 'primary.short_form',
+                              roll_min_node_info("s"))),
+            WITH='  '.join([xr, xrx]) % ('self_xref',
+                                         'dbx.accession',
+                                         roll_min_node_info("s")),
+            vars=["xrefs"])
+
+    # RELATIONSHIPS
+
+    def parents(self):  return Clause(vars=["parents"],
+                                      MATCH=Template("OPTIONAL MATCH (o:Class)"
+                                                     "<-[r:SUBCLASSOF|INSTANCEOF]-($pvar$labels) "),
+                                      WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
+                                           "(%s) END AS parents " % roll_min_node_info("o"))  # Draft
+
+    def relationships(self): return (Clause(vars=["relationships"],
+                                            MATCH=Template("OPTIONAL MATCH "
+                                                           "(o)<-[r {type:'Related'}]-($pvar$labels)"),
+                                            WITH="CASE WHEN o IS NULL THEN [] "
+                                                 "ELSE COLLECT ({ relation: %s, object: %s }) "
+                                                 "END AS relationships " % (roll_min_edge_info("r"),
+                                                                            roll_min_node_info("o"))))
+
+    def related_individuals(self): return (Clause(vars=["related_individuals"],
+                                                  MATCH=Template(
+                                                      "OPTIONAL MATCH "
+                                                      "(o:Individual)<-[r {type:'Related'}]-($pvar$labels)"),
+                                                  WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
+                                                       "({ relation: %s, object: %s }) "
+                                                       "END AS related_individuals "
+                                                       % (roll_min_edge_info("r"),
+                                                          roll_min_node_info("o"))))
+
+    def ep_stage(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH ($pvar$labels)-[r:Related]->(o:FBdv)"),
+            WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
+                 "({ relation: %s, object: %s }) "
+                 "END AS stages "
+                 "" % (roll_min_edge_info("r"),
+                       roll_min_node_info("o")),
+            vars=['stages']
+        )
+
+    # IMAGES
+
+    def _set_image_query_common_elements(self):
+        self._channel_image_match = "<-[:depicts]-" \
+                                    "(channel:Individual)-[irw:in_register_with]" \
+                                    "->(template:Individual)-[:depicts]->" \
+                                    "(template_anat:Individual) WITH template" \
+                                    ", channel, template_anat, irw, $v %s $limit " \
+                                    "OPTIONAL MATCH (channel)-[:is_specified_output_of" \
+                                    "]->(technique:Class) "
+
+        self._channel_image_return = "{ channel: %s, imaging_technique: %s," \
+                                     "image: { template_channel : %s, template_anatomy: %s," \
+                                     "image_folder: irw.folder, " \
+                                     "index: coalesce(irw.index, []) + [] }" \
+                                     "}" % (roll_min_node_info('channel'),
+                                            roll_min_node_info('technique'),
+                                            roll_min_node_info('template'),
+                                            roll_min_node_info('template_anat'))
+
+    def channel_image(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH ($pvar$labels)" + self._channel_image_match % ''),
+            WITH="CASE WHEN channel IS NULL THEN []"
+                 " ELSE collect (" + self._channel_image_return + ") END AS channel_image",
+            vars=["channel_image"])
+
+    def anatomy_channel_image(self):
+        return Clause(
+            MATCH=Template(
+                "OPTIONAL MATCH ($pvar$labels)<-"
+                "[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)"
+                + self._channel_image_match % ', i'),  # Hacky sub!
+            WITH="CASE WHEN channel IS NULL THEN [] " \
+                 "ELSE COLLECT({ anatomy: %s, channel_image: %s }) " \
+                 "END AS anatomy_channel_image " % (
+                     roll_min_node_info("i"), self._channel_image_return),
+            vars=["anatomy_channel_image"],
+            limit='limit 5')
+
+    def template_domain(self):  return Clause(
+        MATCH=Template(
+            "OPTIONAL MATCH (technique:Class)<-[:is_specified_output_of]"
+            "-(channel:Individual)"
+            "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar$labels) "
+            "WHERE has(irw.index) "
+            "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
+            "UNWIND painted_domains AS pd "
+            "MATCH (channel:Individual { short_form: pd.channel.short_form})"
+            "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
+        WITH="collect({ anatomical_type: %s ,"
+             " anatomical_individual: %s, folder: pd.irw.folder, "
+             "center: coalesce (pd.irw.center, []), "
+             "index: [] + coalesce (pd.irw.index, []) })"
+             " AS template_domains" % (roll_min_node_info("c"),
+                                       roll_min_node_info("ai")),
+        vars=["template_domains"])
+
+    def template_channel(self):  return Clause(
+        MATCH=Template(
+            "MATCH (channel:Individual)<-[irw:in_register_with]-"
+            "(channel:Individual)-[:depicts]->($pvar$labels)"),
+        WITH="{ index: coalesce(irw.index, []) + [], "
+             "extent: irw.extent, center: irw.center, voxel: irw.voxel, "
+             "orientation: irw.orientation, image_folder: irw.folder, "
+             "channel: %s } as template_channel" % roll_min_node_info("channel"),
+        vars=["template_channel"])
+
+    ## PUBS
+
+    def _set_pub_common_query_elements(self):
+        # This is only a function for ease of code editing - places declaration next to where it is used.
+        self._pub_return = "{ core: %s, " \
+                           "PubMed: coalesce(p.PMID, ''), " \
+                           "FlyBase: coalesce(p.FlyBase, ''), DOI: coalesce(p.DOI, '') } " \
+                           "" % roll_min_node_info("p")
+
+        self._syn_return = "{ label: coalesce(rp.synonym, ''), " \
+                           "scope: coalesce(rp.scope, ''), type: coalesce(rp.cat,'') } "
+
+    def def_pubs(self):
+        return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
+                                     "[rp:has_reference { typ: 'def'}]->(p:pub) "),
+                      WITH="CASE WHEN p is null THEN "
+                           "[] ELSE collect(" + self._pub_return
+                           + ") END AS def_pubs",
+                      vars=['def_pubs'])
+
+    def pub_syn(self):
+        return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
+                                     "[rp:has_reference { typ: 'syn'}]->(p:pub) "),
+                      WITH="CASE WHEN p is null THEN [] "
+                           "ELSE collect({ pub: %s, synonym: %s }) END AS pub_syn"
+                           % (self._pub_return, self._syn_return),
+                      vars=['pub_syn'])
+
+    def pubs(self):
+        return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)"
+                                     "-[rp:has_reference]->(p:pub) "),
+                      WITH="CASE WHEN p is null THEN [] ELSE "
+                           "collect(" + self._pub_return + ") END AS pubs",
+                      vars=['pubs'])
+
+    def neuron_split(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH (:Class { label: 'intersectional expression pattern'})"
+                           "<-[:SUBCLASSOF]-(ep:Class)<-[ar:part_of]-(anoni:Individual)"
+                           "-[:INSTANCEOF]->($pvar)"),
+            WITH="CASE WHEN ep IS NULL THEN [] ELSE COLLECT(%s) END AS targeting_splits" % roll_min_node_info("ep"),
+            vars=['targeting_splits'])
+
+    def split_neuron(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH (:Class { label: 'intersectional expression pattern'})"
+                           "<-[:SUBCLASSOF]-($pvar)<-[ar:part_of]-(anoni:Individual)"
+                           "-[:INSTANCEOF]->(n:Neuron)"),
+            WITH="CASE WHEN n IS NULL THEN [] ELSE COLLECT(%s) END AS target_neurons" % roll_min_node_info("n"),
+            vars=['target_neurons'])
+
+
+    def dataSet_license(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH "
+                           "($pvar$labels)-[:has_source]->(ds:DataSet)"
+                           "-[:has_license]->(l:License)"),
+            WITH="COLLECT ({ dataset: %s, license: %s}) "
+                 "AS dataset_license" % (roll_node_map(var='ds',
+                                                       d=roll_dataset_return_dict('ds'),
+                                                       typ='core'),
+                                         roll_node_map(var='l',
+                                                       d=roll_license_return_dict('l'),
+                                                       typ='core')),
+            vars=['dataset_license'])
+
+    def license(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH "
+                           "($pvar$labels)-[:has_license]->(l:License)"),
+            WITH="collect (%s) as license"
+                 % roll_node_map(var='l',
+                                 typ='core',
+                                 d=roll_license_return_dict('l')),
+            vars=['license'])
+
+    def dataset_counts(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH ($pvar)<-[:has_source]-(i:Individual)"
+                           " WITH  "
+                           "i, $v OPTIONAL MATCH (i)-[:INSTANCEOF]-(c:Class)"),
+            WITH="DISTINCT { images: count(distinct i),"
+                 "types: count(distinct c) } as dataset_counts",
+            vars=['dataset_counts']
+        )
+
+
+class QueryLibrary(QueryLibraryCore):
+
+    # Class wrapping TermInfo queries & queries -> results tables.
+
+    ## TermInfo
+
+    def anatomical_ind_term_info(self, short_form,
+                                 *args,
+                                 pretty_print=False,
+                                 q_name='Get JSON for Individual:Anatomy'):
+        return query_builder(query_labels=['Individual', 'Anatomy'],
+                             query_short_forms=[short_form],
+                             clauses=[self.term(),
+                                      self.dataSet_license(),
+                                      self.parents(),
+                                      self.relationships(),
+                                      self.xrefs(),
+                                      self.channel_image(),
+                                      self.related_individuals()],
+                             q_name=q_name,
+                             pretty_print=pretty_print)  # Is Anatomy label sufficient here
+
+    def license_term_info(self, short_form,
+                          *args,
+                          pretty_print=False,
+                          q_name='Get JSON for License'):
+        return query_builder(query_labels=['License'],
+                             query_short_forms=[short_form],
+                             clauses=[self.term(
+                                 return_extensions=roll_license_return_dict('primary'))],
+                             q_name=q_name,
+                             pretty_print=pretty_print)
+
+    def class_term_info(self, short_form,
+                    *args,
+                    pretty_print=False,
+                    q_name='Get JSON for Class',
+                    additional_clauses=None):
+        if additional_clauses is None:
+            additional_clauses = []
+        return query_builder(query_labels=['Class'],
+                             query_short_forms=[short_form],
+                             clauses=[self.term(),
+                                      self.parents(),
+                                      self.relationships(),
+                                      self.xrefs(),
+                                      self.anatomy_channel_image(),
+                                      self.pub_syn(),
+                                      self.def_pubs()] + additional_clauses,
+                             q_name=q_name,
+                             pretty_print=pretty_print)
+
+    def neuron_class_term_info(self, short_form,
+                               *args,
+                               pretty_print=False,
+                               q_name="Get JSON for Neuron Class"):
+        return self.class_term_info(short_form, *args,
+                                q_name=q_name,
+                                pretty_print=pretty_print,
+                                additional_clauses=[self.neuron_split()])
+
+    def split_class_term_info(self, short_form,
+                              *args,
+                              pretty_print=False,
+                              q_name="Get JSON for Split Class"):
+        return self.class_term_info(short_form, *args,
+                                q_name=q_name,
+                                pretty_print=pretty_print,
+                                additional_clauses=[self.split_neuron()])
+
+
+    def dataset_term_info(self, short_form, *args, pretty_print=False,
+                      q_name='Get JSON for DataSet'):
+        return query_builder(query_labels=['DataSet'],
+                             query_short_forms=[short_form],
+                             clauses=[self.term(
+                                 return_extensions=
+                                 roll_dataset_return_dict(
+                                     'primary',
+                                     typ='core')),
+                                 self.anatomy_channel_image(),
+                                 self.xrefs(),
+                                 self.license(),
+                                 self.pubs(),
+                                 self.dataset_counts()
+                             ],
+                             q_name=q_name,
+                             pretty_print=pretty_print)
+
+    def template_term_info(self, short_form, *args, pretty_print=False,
+                           q_name='Get JSON for Template'):
+        return query_builder(query_labels=['Template'],
+                             query_short_forms=[short_form],
+                             clauses=[self.term(),
+                                      self.template_channel(),
+                                      self.template_domain(),
+                                      self.dataSet_license(),
+                                      self.parents(),
+                                      self.relationships(),
+                                      self.xrefs(),
+                                      self.related_individuals()
+                                      ],
+                             q_name=q_name,
+                             pretty_print=pretty_print)
+
+    #
 
     def anat_2_ep_wrapper(self):
         return Clause(
@@ -208,311 +538,23 @@ class QueryLibrary:
             node_vars=['anoni', 'anat'],
             RETURN='%s AS anatomy' % (roll_min_node_info('anat')))
 
+        # XREFS
 
-    # XREFS
+    def template_2_datasets_wrapper(self):
+        return Clause(MATCH=Template("MATCH (t:Template)<-[depicts]-(tc:Template)-"
+                                     "[:in_register_with]-(c:Individual)-[:depicts]"
+                                     "->(ai:Individual)-[:has_source]->(ds:DataSet) WHERE t.short_form in $ssf"),
+                      WITH="distinct ds",
+                      vars=[],
+                      node_vars=['ds'],
+                      RETURN="%s as dataset" % (roll_min_node_info('ds')))
 
-    def xrefs(self):
-        match_self_xref = "OPTIONAL MATCH (s:Site { short_form: primary.self_xref }) "
-        match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-($pvar$labels) "
-
-        xr = "CASE WHEN s IS NULL THEN %s ELSE COLLECT" \
-             "({ link_base: s.link_base, " \
-             "accession: coalesce(%s, ''), " \
-             "link_text: primary.label + ' on ' + s.label, " \
-             "homepage: coalesce(s.homepage, ''), " \
-             "site: %s, icon: coalesce(s.link_icon_url, ''),  " \
-             "link_postfix: coalesce(s.link_postfix, '')}) " # Should be $pvar$labels not primary, but need sub on WITH!
-        xrs = "END AS self_xref, $v"  # Passing vars
-        xrx = "+ self_xref END AS xrefs"
-
-        return Clause(
-            MATCH=Template(' '.join([match_self_xref, "WITH", xr, xrs, match_ext_xref])
-                           % ('[]','primary.short_form',
-                              roll_min_node_info("s"))),
-            WITH='  '.join([xr, xrx]) % ('self_xref',
-                                         'dbx.accession',
-                                         roll_min_node_info("s")),
-            vars=["xrefs"])
-
-    # RELATIONSHIPS
-
-    def parents(self):  return Clause(vars=["parents"],
-                                      MATCH=Template("OPTIONAL MATCH (o:Class)"
-                                                     "<-[r:SUBCLASSOF|INSTANCEOF]-($pvar$labels) "),
-                                      WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
-                                           "(%s) END AS parents " % roll_min_node_info("o"))  # Draft
-
-    def relationships(self): return (Clause(vars=["relationships"],
-                                            MATCH=Template("OPTIONAL MATCH "
-                                                           "(o:Class)<-[r {type:'Related'}]-($pvar$labels)"),
-                                            WITH="CASE WHEN o IS NULL THEN [] "
-                                                 "ELSE COLLECT ({ relation: %s, object: %s }) "
-                                                 "END AS relationships " % (roll_min_edge_info("r"),
-                                                                            roll_min_node_info("o"))))
-
-    def related_individuals(self): return (Clause(vars=["related_individuals"],
-                                                  MATCH=Template(
-                                                      "OPTIONAL MATCH "
-                                                      "(o:Individual)<-[r {type:'Related'}]-($pvar$labels)"),
-                                                  WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
-                                                       "({ relation: %s, object: %s }) "
-                                                       "END AS related_individuals "
-                                                       % (roll_min_edge_info("r"),
-                                                          roll_min_node_info("o"))))
-
-    def ep_stage(self):
-        return Clause(
-            MATCH=Template("OPTIONAL MATCH ($pvar$labels)-[r:Related]->(o:FBdv)"),
-            WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
-                  "({ relation: %s, object: %s }) "
-                  "END AS stages "
-                 "" % (roll_min_edge_info("r"),
-                       roll_min_node_info("o")),
-            vars=['stages']
-        )
-
-    # IMAGES
-
-    def _set_image_query_common_elements(self):
-
-        self._channel_image_match = "<-[:depicts]-" \
-               "(channel:Individual)-[irw:in_register_with]" \
-               "->(template:Individual)-[:depicts]->" \
-               "(template_anat:Individual) WITH template" \
-               ", channel, template_anat, irw, $v %s $limit " \
-               "OPTIONAL MATCH (channel)-[:is_specified_output_of" \
-               "]->(technique:Class) "
-
-        self._channel_image_return = "{ channel: %s, imaging_technique: %s," \
-                                     "image: { template_channel : %s, template_anatomy: %s," \
-                                     "image_folder: irw.folder, " \
-                                     "index: coalesce(irw.index, []) + [] }" \
-                                     "}" % (roll_min_node_info('channel'),
-                                            roll_min_node_info('technique'),
-                                            roll_min_node_info('template'),
-                                            roll_min_node_info('template_anat'))
-
-    def channel_image(self):
-        return Clause(
-        MATCH=Template("OPTIONAL MATCH ($pvar$labels)" + self._channel_image_match % ''),
-        WITH="CASE WHEN channel IS NULL THEN []"
-             " ELSE collect (" + self._channel_image_return + ") END AS channel_image",
-        vars=["channel_image"])
-
-    def anatomy_channel_image(self):
-        return Clause(
-            MATCH=Template(
-                "OPTIONAL MATCH ($pvar$labels)<-"
-                "[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)"
-                + self._channel_image_match % ', i'),  # Hacky sub!
-            WITH="CASE WHEN channel IS NULL THEN [] " \
-                 "ELSE COLLECT({ anatomy: %s, channel_image: %s }) " \
-                 "END AS anatomy_channel_image " % (
-                 roll_min_node_info("i"), self._channel_image_return),
-            vars=["anatomy_channel_image"],
-            limit='limit 5')
-
-
-    def template_domain(self):  return Clause(
-    MATCH=Template(
-        "OPTIONAL MATCH (technique:Class)<-[:is_specified_output_of]"
-        "-(channel:Individual)"
-        "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar$labels) "
-        "WHERE has(irw.index) "
-        "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
-        "UNWIND painted_domains AS pd "
-        "MATCH (channel:Individual { short_form: pd.channel.short_form})"
-        "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
-    WITH="collect({ anatomical_type: %s ,"
-         " anatomical_individual: %s, folder: pd.irw.folder, "
-         "center: coalesce (pd.irw.center, []), "
-         "index: [] + coalesce (pd.irw.index, []) })"
-         " AS template_domains" % (roll_min_node_info("c"),
-                                   roll_min_node_info("ai")),
-    vars=["template_domains"])
-
-
-    def template_channel(self):  return Clause(
-    MATCH=Template(
-        "MATCH (channel:Individual)<-[irw:in_register_with]-"
-        "(channel:Individual)-[:depicts]->($pvar$labels)"),
-    WITH="{ index: coalesce(irw.index, []) + [], "
-         "extent: irw.extent, center: irw.center, voxel: irw.voxel, "
-         "orientation: irw.orientation, image_folder: irw.folder, "
-         "channel: %s } as template_channel" % roll_min_node_info("channel"),
-    vars=["template_channel"])
-
-    ## PUBS
-
-    def _set_pub_common_query_elements(self):
-        # This is only a function for ease of code editing - places declaration next to where it is used.
-        self._pub_return = "{ core: %s, " \
-                           "PubMed: coalesce(p.PMID, ''), " \
-                           "FlyBase: coalesce(p.FlyBase, ''), DOI: coalesce(p.DOI, '') } " \
-                           "" % roll_min_node_info("p")
-
-        self._syn_return = "{ label: coalesce(rp.synonym, ''), " \
-                           "scope: coalesce(rp.scope, ''), type: coalesce(rp.cat,'') } "
-
-
-    def def_pubs(self):  return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
-                                                      "[rp:has_reference { typ: 'def'}]->(p:pub) "),
-                                       WITH="CASE WHEN p is null THEN "
-                                            "[] ELSE collect(" + self._pub_return + ") END AS def_pubs",
-                                       vars=['def_pubs'])
-
-    def pub_syn(self):  return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
-                                                     "[rp:has_reference { typ: 'syn'}]->(p:pub) "),
-                                      WITH="CASE WHEN p is null THEN [] "
-                                           "ELSE collect({ pub: %s, synonym: %s }) END AS pub_syn"
-                                           % (self._pub_return, self._syn_return),
-                                      vars=['pub_syn'])
-
-    def pub(self):  return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)"
-                                                 "-[rp:has_reference]->(p:pub) "),
-                                  WITH="CASE WHEN p is null THEN [] ELSE "
-                                       "collect(" + self._pub_return + ") END AS def_pubs",
-                                  vars=['def_pubs'])
-
-    def neuron_split(self):
-        return Clause(
-            MATCH=Template("OPTIONAL MATCH (:Class { label: 'intersectional expression pattern'})"
-                           "<-[:SUBCLASSOF]-(ep:Class)<-[ar:part_of]-(anoni:Individual)"
-                           "-[:INSTANCEOF]->($pvar)"),
-            WITH="CASE WHEN ep IS NULL THEN [] ELSE COLLECT(%s) END AS targeting_splits" % roll_min_node_info("ep"),
-            vars=['targeting_splits'])
-
-    def split_neuron(self):
-        return Clause(
-            MATCH=Template("OPTIONAL MATCH (:Class { label: 'intersectional expression pattern'})"
-                           "<-[:SUBCLASSOF]-($pvar)<-[ar:part_of]-(anoni:Individual)"
-                           "-[:INSTANCEOF]->(n:Neuron)"),
-            WITH="CASE WHEN n IS NULL THEN [] ELSE COLLECT(%s) END AS target_neurons" % roll_min_node_info("n"),
-            vars=['target_neurons'])
-
-
-    def dataSet_license(self):
-        return Clause(
-            MATCH=Template("OPTIONAL MATCH "
-                           "($pvar$labels)-[:has_source]->(ds:DataSet)"
-                            "-[:has_license]->(l:License)"),
-            WITH="COLLECT ({ dataset: %s, license: %s}) "
-                  "AS dataset_license" % (roll_node_map(var = 'ds',
-                                                        d=roll_dataset_return_dict('ds'),
-                                                        typ='core'),
-                                          roll_node_map(var = 'l',
-                                                        d=roll_license_return_dict('l'),
-                                                        typ='core')),
-            vars=['dataset_license'])
-
-    def license(self):
-        return Clause(
-            MATCH=Template("OPTIONAL MATCH "
-                           "($pvar$labels)-[:has_license]->(l:License)"),
-            WITH="collect (%s) as license" % roll_node_map(var = 'l',
-                                                           typ='core',
-                                                           d = roll_license_return_dict('l')),
-            vars=['license'])
-
-    # COMPOUND QUERIES
-
-    def anatomical_ind_query(self, short_form,
-                             *args,
-                             pretty_print=False,
-                             q_name='Get JSON for Individual:Anatomy'):
-
-        return query_builder(query_labels=['Individual', 'Anatomy'],
-                             query_short_forms=[short_form],
-                             clauses=[self.term(),
-                                      self.dataSet_license(),
-                                      self.parents(),
-                                      self.relationships(),
-                                      self.xrefs(),
-                                      self.channel_image(),
-                                      self.related_individuals()],
-                             q_name=q_name,
-                             pretty_print=pretty_print)  # Is Anatomy label sufficient here
-
-    def license_query(self, short_form,
-                      *args,
-                      pretty_print=False,
-                      q_name='Get JSON for License'):
-        return query_builder(query_labels=['License'],
-                             query_short_forms=[short_form],
-                             clauses=[self.term(
-                                return_extensions=roll_license_return_dict('primary'))],
-                             q_name=q_name,
-                             pretty_print=pretty_print)
-
-    def class_query(self, short_form,
-                    *args,
-                    pretty_print=False,
-                    q_name='Get JSON for Class',
-                    additional_clauses=None):
-        if additional_clauses is None:
-            additional_clauses = []
-        return query_builder(query_labels=['Class'],
-                             query_short_forms=[short_form],
-                             clauses=[self.term(),
-                                      self.parents(),
-                                      self.relationships(),
-                                      self.related_individuals(),
-                                      self.xrefs(),
-                                      self.anatomy_channel_image(),
-                                      self.pub_syn(),
-                                      self.def_pubs()] + additional_clauses,
-                             q_name=q_name,
-                             pretty_print=pretty_print)
-
-    def neuron_class_query(self, short_form,
-                    *args,
-                    pretty_print=False,
-                    q_name="Get JSON for Neuron Class"):
-        return self.class_query(short_form, *args,
-                                q_name=q_name,
-                                pretty_print=pretty_print,
-                                additional_clauses=[self.neuron_split()])
-
-    def split_class_query(self, short_form,
-                    *args,
-                    pretty_print=False,
-                    q_name="Get JSON for Split Class"):
-        return self.class_query(short_form, *args,
-                                q_name=q_name,
-                                pretty_print=pretty_print,
-                                additional_clauses=[self.split_neuron()])
-
-    def dataset_query(self, short_form, *args, pretty_print=False,
-                      q_name='Get JSON for DataSet'):
-        return query_builder(query_labels=['DataSet'],
-                             query_short_forms=[short_form],
-                             clauses=[self.term(
-                                 return_extensions=
-                                     roll_dataset_return_dict(
-                                                        'primary',
-                                                        typ='core')),
-                                    self.anatomy_channel_image(),
-                                    self.xrefs(),
-                                    self.license(),
-                                    self.pub()],
-                             q_name=q_name,
-                             pretty_print=pretty_print)
-
-    def template_query(self, short_form, *args, pretty_print=False,
-                       q_name='Get JSON for Template'):
-        return query_builder(query_labels=['Template'],
-                             query_short_forms=[short_form],
-                             clauses=[self.term(),
-                                      self.template_channel(),
-                                      self.template_domain(),
-                                      self.dataSet_license(),
-                                      self.parents(),
-                                      self.relationships(),
-                                      self.xrefs(),
-                                      self.related_individuals()
-                                      ],
-                             q_name=q_name,
-                             pretty_print=pretty_print)
+    def all_datasets_wrapper(self):
+        return Clause(MATCH=Template("MATCH (ds:DataSet)"),
+                      WITH="ds",
+                      vars=[],
+                      node_vars=['ds'],
+                      RETURN="%s as dataset" % (roll_min_node_info('ds')))
 
     def anat_2_ep_query(self, short_forms, *args, pretty_print=False):
         # we want images of eps (ep, returned by self.anat_2_ep_wrapper())
@@ -547,15 +589,56 @@ class QueryLibrary:
                              q_name='Get JSON for ep_2_anat query',
                              pretty_print=pretty_print)
 
+    def template_2_datasets_query(self, short_form):
+        aci = self.anatomy_channel_image()
+        aci.__setattr__('pvar', 'ds')
+        # In the absence of extra tools available for Neo4j3.n
+        # We can't set limits on numbers of images.
+        # For this reason, we may have to remove aci from this
+        # query for now.  Maybe add counts instead for now?
+        aci.__setattr__('limit', '')
+        pub = self.pubs()
+        pub.__setattr__('pvar', 'ds')
+        li = self.license()
+        li.__setattr__('pvar', 'ds')
+        counts = self.dataset_counts()
+        counts.__setattr__('pvar', 'ds')
+        return query_builder(query_short_forms=[short_form],
+                             clauses=[self.template_2_datasets_wrapper(),
+                                      # aci, # commenting as too slow w/o limit
+                                      pub,
+                                      li,
+                                      counts])
+
+    def all_datasets_query(self):
+        aci = self.anatomy_channel_image()
+        aci.__setattr__('pvar', 'ds')
+        # In the absence of extra tools available for Neo4j3.n
+        # We can't set limits on numbers of images.
+        # For this reason, we may have to remove aci from this
+        # query for now.  Maybe add counts instead for now?
+        aci.__setattr__('limit', '')
+        pub = self.pubs()
+        pub.__setattr__('pvar', 'ds')
+        li = self.license()
+        li.__setattr__('pvar', 'ds')
+        counts = self.dataset_counts()
+        counts.__setattr__('pvar', 'ds')
+        return query_builder(clauses=[self.all_datasets_wrapper(),
+                                      # aci # commenting as too slow w/o limit
+                                      pub,
+                                      li,
+                                      counts])
+
 
 def term_info_export():
     # Generate a JSON with TermInto queries
     ql = QueryLibrary()
-    query_methods = ['anatomical_ind_query',
-                     'class_query',
-                     'dataset_query',
-                     'license_query',
-                     'template_query']
+    query_methods = ['anatomical_ind_term_info',
+                     'class_term_info',
+                     'dataset_term_info',
+                     'license_term_info',
+                     'template_term_info']
 
     out = {}
     for qm in query_methods:
@@ -565,10 +648,3 @@ def term_info_export():
         q = qf(short_form='$ID')
         out[q_name] = saxutils.escape(q)
     return json.dumps(out)
-
-
-
-
-
-
-

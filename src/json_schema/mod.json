@@ -424,6 +424,24 @@
           "$ref": "#/definitions/pub"
         }
       }
+    },
+    "dataset_counts": {
+      "type": "object",
+      "additional_properties": false,
+      "required": [
+        "images",
+        "types"
+      ],
+      "properties": {
+        "images": {
+          "description": "Number of images in dataset.",
+          "type": "integer"
+        },
+        "types": {
+          "type": "integer",
+          "description": "Number of distinct anatomical types depicted in dataset. Anatomical type here is used broadly to include gross anatomy, cell types, and expression patterns."
+        }
+      }
     }
   }
 }

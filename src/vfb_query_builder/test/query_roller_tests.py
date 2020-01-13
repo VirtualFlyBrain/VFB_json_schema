@@ -1,5 +1,5 @@
 import unittest
-from vfb_query_builder.query_roller import QueryLibrary, Clause, query_builder, term_info_export
+from vfb_query_builder.query_roller import QueryLibrary, term_info_export
 
 
 class QueryRollerTest(unittest.TestCase):

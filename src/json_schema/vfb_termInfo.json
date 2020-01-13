@@ -42,11 +42,20 @@
         "$ref": "mod.json#definitions/license"
       }
     },
+    "pubs": {
+      "type": "array",
+      "items": {
+        "$ref": "mod.json#definitions/pub"
+      }
+    },
     "dataset_license": {
       "type": "array",
       "items": {
         "$ref": "mod.json#definitions/dataset_license"
       }
+    },
+    "dataset_counts":  {
+      "$ref": "mod.json#definitions/dataset_counts"
     },
     "relationships": {
       "type": "array",

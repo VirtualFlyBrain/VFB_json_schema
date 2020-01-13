@@ -9,6 +9,12 @@
     "anatomy": {
       "$ref": "mod.json#definitions/minimal_entity_info"
     },
+    "dataset": {
+      "$ref": "mod.json#definitions/minimal_entity_info"
+    },
+    "dataset_counts":  {
+      "$ref": "mod.json#definitions/dataset_counts"
+    },
     "pub": {
       "$ref": "mod.json#definitions/pub"
     },
@@ -33,6 +39,12 @@
         "$ref": "mod.json#definitions/anatomy_channel_image"
       }
     },
+    "license": {
+      "type": "array",
+      "items": {
+        "$ref": "mod.json#definitions/license"
+      }
+    },
     "pubs": {
       "type": "array",
       "items": {
@@ -40,11 +52,11 @@
       }
     },
     "query": {
-      "type":  "string",
+      "type": "string",
       "description": "A descriptive name for the query used to generate this JSON."
     },
     "version": {
-      "type":  "string",
+      "type": "string",
       "description": "A version tag for the query used to generate this JSON."
     }
   }

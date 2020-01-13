@@ -113,12 +113,12 @@ class TermInfoRollerTest(unittest.TestCase):
                          query=query)
 
     def test_class(self):
-        query = self.ql.class_query(short_form='FBbt_00007422')
+        query = self.ql.class_term_info(short_form='FBbt_00007422')
         r = self.qw.test(t=self,
                          query=query)
 
     def test_individual(self):
-        query = self.ql.anatomical_ind_query(short_form='VFB_00011179')
+        query = self.ql.anatomical_ind_term_info(short_form='VFB_00011179')
         r = self.qw.test(t=self,
                          query=query)
 
@@ -131,12 +131,12 @@ class TermInfoRollerTest(unittest.TestCase):
                          query=query)
 
     def test_dataset(self):
-        query = self.ql.dataset_query(short_form='Ito2013')
+        query = self.ql.dataset_term_info(short_form='Ito2013')
         r = self.qw.test(t=self,
                          query=query)
 
     def test_license(self):
-        query = self.ql.license_query(short_form='VFBlicense_CC_BY_SA_4_0')
+        query = self.ql.license_term_info(short_form='VFBlicense_CC_BY_SA_4_0')
         r = self.qw.test(t=self,
                          query=query)
 
@@ -152,7 +152,7 @@ class TermInfoRollerTest(unittest.TestCase):
         query = query_builder(query_labels=['DataSet'],
                               query_short_forms=['Ito2013'],
                               clauses=[self.ql.term(),
-                                       self.ql.pub()])
+                                       self.ql.pubs()])
         r = self.qw.test(t=self,
                          query=query)
 
@@ -165,7 +165,7 @@ class TermInfoRollerTest(unittest.TestCase):
                          query=query)
 
     def test_template(self):
-        query = self.ql.template_query(short_form="VFB_00017894", pretty_print=True)
+        query = self.ql.template_term_info(short_form="VFB_00017894", pretty_print=True)
         r = self.qw.test(t=self,
                          query=query)
 
@@ -186,18 +186,18 @@ class TermInfoRollerTest(unittest.TestCase):
                          query=query)
 
     def test_neuron_class(self):
-        query = self.ql.neuron_class_query(short_form="FBbt_00047609", pretty_print=True)
+        query = self.ql.neuron_class_term_info(short_form="FBbt_00047609", pretty_print=True)
         r = self.qw.test(t=self,
                          query=query)
 
     def test_neuron_class_null_split(self):
         # Splits unlikely to be directly annotated with neuron only
-        query = self.ql.neuron_class_query(short_form="FBbt_00005106", pretty_print=True)
+        query = self.ql.neuron_class_term_info(short_form="FBbt_00005106", pretty_print=True)
         r = self.qw.test(t=self,
                          query=query)
 
     def test_split_class(self):
-        query = self.ql.split_class_query(short_form="VFBexp_FBtp0123136FBtp0119953", pretty_print=True)
+        query = self.ql.split_class_term_info(short_form="VFBexp_FBtp0123136FBtp0119953", pretty_print=True)
         r = self.qw.test(t=self,
                          query=query)
 
