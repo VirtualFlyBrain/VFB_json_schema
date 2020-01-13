@@ -31,7 +31,9 @@ class Clause:
         $labels: labels of primary matched term.  Can be used to modify
                  labels of $pvar$labels in other clauses in order
                  to further restrict.
-        $pvar$labels: pvar;
+        $pvar: Binding for variable (node_var) from previous clause.
+        By default bound to 'primary' but may be bound to any node_var specified
+            in a previous clause.
         $ssf: starting short forms
         $v: vars
     WITH: A cypher string that converts variable output of the MATCH
@@ -41,8 +43,7 @@ class Clause:
     vars: a list of variable names for data structures in with statement.
           These will be interpolated into subsequent clauses and the return statement
     node_vars: a list of variables returned by the MATCH statement,
-              referring to whole nodes, to be interpolated
-               into subsequent clauses.
+              referring to whole nodes, to be interpolated into subsequent clauses.
     RETURN: A cypher string that converts variables referenced in node_vars
     into a data structure in the final return statement of the generated cypher query.
     """
@@ -124,7 +125,7 @@ def roll_min_edge_info(var):
     """Rolls core JSON (specifying minimal info about an edge.
     var: the variable name for the edge within this cypher clause."""
     return "{ label: %s.label, " \
-           "iri: %s.uri, type: type(%s) } " % (var, var, var)  # short_forms are not present in OLS-PDB
+           "iri: %s.iri, type: type(%s) } " % (var, var, var)  # short_forms are not present in OLS-PDB
 
 def roll_pub_return(var):
     s = Template("{ core: $core, "
@@ -176,7 +177,8 @@ class QueryLibraryCore:
             "link": "coalesce(%s.dataset_link, '')"
         }
         self.license_spec_fields = {'icon': "coalesce(%s.license_logo, '')",
-                                    'link': "coalesce(%s.license_url, '')x"}
+                                    'link': "coalesce(%s.license_url, '')x"
+                                    }
 
     def term(self, return_extensions=None):
         if return_extensions is None:
@@ -200,6 +202,7 @@ class QueryLibraryCore:
              "({ link_base: s.link_base, " \
              "accession: coalesce(%s, ''), " \
              "link_text: primary.label + ' on ' + s.label, " \
+             "homepage: coalesce(s.homepage, ''), " \
              "site: %s, icon: coalesce(s.link_icon_url, ''),  " \
              "link_postfix: coalesce(s.link_postfix, '')}) "  # Should be $pvar$labels not primary, but need sub on WITH!
         xrs = "END AS self_xref, $v"  # Passing vars
@@ -354,6 +357,23 @@ class QueryLibraryCore:
                            "collect(" + self._pub_return + ") END AS pubs",
                       vars=['pubs'])
 
+    def neuron_split(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH (:Class { label: 'intersectional expression pattern'})"
+                           "<-[:SUBCLASSOF]-(ep:Class)<-[ar:part_of]-(anoni:Individual)"
+                           "-[:INSTANCEOF]->($pvar)"),
+            WITH="CASE WHEN ep IS NULL THEN [] ELSE COLLECT(%s) END AS targeting_splits" % roll_min_node_info("ep"),
+            vars=['targeting_splits'])
+
+    def split_neuron(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH (:Class { label: 'intersectional expression pattern'})"
+                           "<-[:SUBCLASSOF]-($pvar)<-[ar:part_of]-(anoni:Individual)"
+                           "-[:INSTANCEOF]->(n:Neuron)"),
+            WITH="CASE WHEN n IS NULL THEN [] ELSE COLLECT(%s) END AS target_neurons" % roll_min_node_info("n"),
+            vars=['target_neurons'])
+
+
     def dataSet_license(self):
         return Clause(
             MATCH=Template("OPTIONAL MATCH "
@@ -423,9 +443,12 @@ class QueryLibrary(QueryLibraryCore):
                              pretty_print=pretty_print)
 
     def class_term_info(self, short_form,
-                        *args,
-                        pretty_print=False,
-                        q_name='Get JSON for Class'):
+                    *args,
+                    pretty_print=False,
+                    q_name='Get JSON for Class',
+                    additional_clauses=None):
+        if additional_clauses is None:
+            additional_clauses = []
         return query_builder(query_labels=['Class', 'Anatomy'],
                              query_short_forms=[short_form],
                              clauses=[self.term(),
@@ -434,12 +457,31 @@ class QueryLibrary(QueryLibraryCore):
                                       self.xrefs(),
                                       self.anatomy_channel_image(),
                                       self.pub_syn(),
-                                      self.def_pubs()],
+                                      self.def_pubs()] + additional_clauses,
                              q_name=q_name,
                              pretty_print=pretty_print)
 
+    def neuron_class_term_info(self, short_form,
+                               *args,
+                               pretty_print=False,
+                               q_name="Get JSON for Neuron Class"):
+        return self.class_term_info(short_form, *args,
+                                q_name=q_name,
+                                pretty_print=pretty_print,
+                                additional_clauses=[self.neuron_split()])
+
+    def split_class_term_info(self, short_form,
+                              *args,
+                              pretty_print=False,
+                              q_name="Get JSON for Split Class"):
+        return self.class_term_info(short_form, *args,
+                                q_name=q_name,
+                                pretty_print=pretty_print,
+                                additional_clauses=[self.split_neuron()])
+
+
     def dataset_term_info(self, short_form, *args, pretty_print=False,
-                          q_name='Get JSON for DataSet'):
+                      q_name='Get JSON for DataSet'):
         return query_builder(query_labels=['DataSet'],
                              query_short_forms=[short_form],
                              clauses=[self.term(

@@ -260,10 +260,14 @@
         "link_base",
         "accession",
         "link_text",
-        "site"
+        "site",
+        "homepage"
       ],
       "type": "object",
       "properties": {
+        "homepage": {
+          "description": "Homepage URL for site."
+        },
         "link_base": {
           "description": "The base of a URL linking to some third party site. Makes a link to specific page on target resource when accession is appended.",
           "type": "string"
