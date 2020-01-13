@@ -124,7 +124,7 @@ def roll_min_edge_info(var):
     """Rolls core JSON (specifying minimal info about an edge.
     var: the variable name for the edge within this cypher clause."""
     return "{ label: %s.label, " \
-           "iri: %s.uri, type: type(%s) } " % (var, var, var)  # short_forms are not present in OLS-PDB
+           "iri: %s.iri, type: type(%s) } " % (var, var, var)  # short_forms are not present in OLS-PDB
 
 
 
