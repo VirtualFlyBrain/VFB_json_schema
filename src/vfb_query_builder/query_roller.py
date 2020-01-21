@@ -454,6 +454,7 @@ class QueryLibrary(QueryLibraryCore):
                              clauses=[self.term(),
                                       self.parents(),
                                       self.relationships(),
+                                      self.related_individuals(),
                                       self.xrefs(),
                                       self.anatomy_channel_image(),
                                       self.pub_syn(),
