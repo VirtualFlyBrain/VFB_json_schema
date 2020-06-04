@@ -5,6 +5,14 @@ import subprocess
 from xml.sax import saxutils
 import json
 
+def dict_2_map(d, out = '{'):
+    for k, v in d.items():
+        if type(v) == 'dict':
+            dict_2_map(d, out)
+        else:
+            out += k +':' + '"' + str(v) + '"'
+    return out
+
 
 def get_version_tag():
     tag = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'])
@@ -140,6 +148,14 @@ def roll_pub_return(var):
 def roll_license_return_dict(var):
     return {'icon': "coalesce(%s.license_logo, '')" % var,
             'link': "coalesce(%s.license_url, '')" % var}
+
+def roll_pub_return_dict(var):
+    return { "pubs":
+                  {"core": roll_min_node_info(var),
+                  "PubMed": "coalesce(%s.PMID, '')" % var,
+                  "FlyBase": "coalesce(%s.FlyBase, '')" % var,
+                  "DOI": "coalesce(%s.DOI, '')" % var} }
+
 
 
 def roll_dataset_return_dict(var, typ=''):
@@ -470,6 +486,34 @@ class QueryLibrary(QueryLibraryCore):
                                 q_name=q_name,
                                 pretty_print=pretty_print,
                                 additional_clauses=[self.neuron_split()])
+
+    def pub_term_info(self, short_form, pretty_print=True):
+        # STATUS: STUB !
+        return query_builder(query_labels=['pub'],
+                             query_short_forms=[short_form],
+                             clauses=[self.term(return_extensions=roll_pub_return_dict('primary'))],
+                             q_name='pub_term_info',
+                             pretty_print=pretty_print)
+
+    # Roll this into
+    def pub_dataset_query(self):
+        # STATUS: STUB !
+        query = "OPTIONAL MATCH ()" \
+                 "-[rp:has_reference]->($pvar$labels) "
+        return
+
+#    def pub_expression_query(self):
+#        # STATUS: STUB !
+#        Clause(MATCH=Template("MATCH "
+#                              "ep:Class:Expression_pattern)"
+#                "<-[ar:overlaps|part_of]-(:Individual)"
+#                "-[:INSTANCEOF]->(anat:Class) "
+##                "WHERE ar.pub=$pvar) "),
+#               node_vars=['ep'],
+#               vars = [],
+#               RETURN=)
+
+
 
     def split_class_term_info(self, short_form,
                               *args,

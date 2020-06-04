@@ -117,6 +117,11 @@ class TermInfoRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
+    def test_pub(self):
+        query = self.ql.pub_term_info(short_form='FBrf0233076')
+        r = self.qw.test(t=self,
+                         query=query)
+
     def test_individual(self):
         query = self.ql.anatomical_ind_term_info(short_form='VFB_00011179')
         r = self.qw.test(t=self,
