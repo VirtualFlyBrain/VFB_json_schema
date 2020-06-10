@@ -415,12 +415,12 @@ class QueryLibrary(QueryLibraryCore):
 
     ## TermInfo
 
-    def anatomical_ind_term_info(self, short_form,
+    def anatomical_ind_term_info(self, short_form: list,
                                  *args,
                                  pretty_print=False,
                                  q_name='Get JSON for Individual:Anatomy'):
         return query_builder(query_labels=['Individual', 'Anatomy'],
-                             query_short_forms=[short_form],
+                             query_short_forms=short_form,
                              clauses=[self.term(),
                                       self.dataSet_license(),
                                       self.parents(),
@@ -431,12 +431,12 @@ class QueryLibrary(QueryLibraryCore):
                              q_name=q_name,
                              pretty_print=pretty_print)  # Is Anatomy label sufficient here
 
-    def license_term_info(self, short_form,
+    def license_term_info(self, short_form: list,
                           *args,
                           pretty_print=False,
                           q_name='Get JSON for License'):
         return query_builder(query_labels=['License'],
-                             query_short_forms=[short_form],
+                             query_short_forms=short_form,
                              clauses=[self.term(
                                  return_extensions=roll_license_return_dict('primary'))],
                              q_name=q_name,
@@ -450,7 +450,7 @@ class QueryLibrary(QueryLibraryCore):
         if additional_clauses is None:
             additional_clauses = []
         return query_builder(query_labels=['Class'],
-                             query_short_forms=[short_form],
+                             query_short_forms=short_form,
                              clauses=[self.term(),
                                       self.parents(),
                                       self.relationships(),
@@ -481,10 +481,10 @@ class QueryLibrary(QueryLibraryCore):
                                 additional_clauses=[self.split_neuron()])
 
 
-    def dataset_term_info(self, short_form, *args, pretty_print=False,
+    def dataset_term_info(self, short_form: list, *args, pretty_print=False,
                       q_name='Get JSON for DataSet'):
         return query_builder(query_labels=['DataSet'],
-                             query_short_forms=[short_form],
+                             query_short_forms=short_form,
                              clauses=[self.term(
                                  return_extensions=
                                  roll_dataset_return_dict(
@@ -499,10 +499,10 @@ class QueryLibrary(QueryLibraryCore):
                              q_name=q_name,
                              pretty_print=pretty_print)
 
-    def template_term_info(self, short_form, *args, pretty_print=False,
+    def template_term_info(self, short_form: list, *args, pretty_print=False,
                            q_name='Get JSON for Template'):
         return query_builder(query_labels=['Template'],
-                             query_short_forms=[short_form],
+                             query_short_forms=short_form,
                              clauses=[self.term(),
                                       self.template_channel(),
                                       self.template_domain(),
@@ -632,7 +632,7 @@ class QueryLibrary(QueryLibraryCore):
                                       counts])
 
 
-def term_info_export():
+def term_info_export(escape=True):
     # Generate a JSON with TermInto queries
     ql = QueryLibrary()
     query_methods = ['anatomical_ind_term_info',
@@ -646,6 +646,9 @@ def term_info_export():
         # This whole approach feels a bit hacky...
         qf = getattr(ql, qm)
         q_name = qf.__kwdefaults__['q_name']
-        q = qf(short_form='$ID')
-        out[q_name] = saxutils.escape(q)
+        q = qf(short_form=['$ID'])
+        if escape:
+            out[q_name] = saxutils.escape(q)
+        else:
+            out[q_name] = q
     return json.dumps(out)
