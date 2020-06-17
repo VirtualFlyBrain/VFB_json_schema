@@ -57,6 +57,7 @@ class Clause:
     starting_labels: list = field(default_factory=list)
     pvar: str = 'primary'
     limit: str = ''
+    prel: str = ''
 
     def get_clause(self, varz, pretty_print=True):
         """Generate a cypher string using the attributes of this clause object,
@@ -72,6 +73,7 @@ class Clause:
                                    v=', '.join(varz),
                                    ssf=str(self.starting_short_forms),
                                    labels=':'.join(l),
+                                   prel=self.prel,
                                    limit=self.limit),
              'WITH ' + ','.join([self.WITH] + varz)])
 
@@ -374,10 +376,10 @@ class QueryLibraryCore:
             vars=['target_neurons'])
 
 
-    def dataSet_license(self):
+    def dataSet_license(self, prel='has_source'):
         return Clause(
             MATCH=Template("OPTIONAL MATCH "
-                           "($pvar$labels)-[:has_source]->(ds:DataSet)"
+                           "($pvar$labels)-[:$prel]-(ds:DataSet)"
                            "-[:has_license]->(l:License)"),
             WITH="COLLECT ({ dataset: %s, license: %s}) "
                  "AS dataset_license" % (roll_node_map(var='ds',
@@ -386,7 +388,8 @@ class QueryLibraryCore:
                                          roll_node_map(var='l',
                                                        d=roll_license_return_dict('l'),
                                                        typ='core')),
-            vars=['dataset_license'])
+            vars=['dataset_license'],
+            prel=prel)
 
     def license(self):
         return Clause(

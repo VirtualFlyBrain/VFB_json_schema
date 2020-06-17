@@ -204,5 +204,13 @@ class TermInfoRollerTest(unittest.TestCase):
     def tearDown(self):
         return
 
+    def test_pub_TermInfo(self):
+        query = query_builder(
+            query_short_forms=['FBrf0221438'],
+            query_labels=['Individual', 'pub'],
+            clauses=[self.ql.term(), self.ql.dataSet_license(prel='has_reference')])
+        r = self.qw.test(t=self,
+                         query=query)
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
