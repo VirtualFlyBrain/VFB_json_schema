@@ -387,6 +387,23 @@
         }
       }
     },
+    "pub_links": {
+      "additionalProperties": false,
+      "properties": {
+        "PubMed": {
+          "type": "string"
+        },
+        "FlyBase": {
+          "type": "string"
+        },
+        "DOI": {
+          "type": "string"
+        },
+        "ISBN": {
+          "type": "string"
+        }
+      }
+    },
     "synonym": {
       "additionalProperties": false,
       "required": [

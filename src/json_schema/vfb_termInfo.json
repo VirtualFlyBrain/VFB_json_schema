@@ -113,6 +113,12 @@
       "items": {
         "$ref": "mod.json#definitions/minimal_entity_info"
       }
+    },
+    "title": {
+      "type": "string",
+      "description":  "Publication title"},
+    "pub_links": {
+      "$ref": "mod.json#definitions/pub_links"
     }
   }
 }

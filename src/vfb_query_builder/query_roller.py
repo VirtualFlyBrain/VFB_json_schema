@@ -502,6 +502,22 @@ class QueryLibrary(QueryLibraryCore):
                              q_name=q_name,
                              pretty_print=pretty_print)
 
+    def pub_term_info(self, short_form: list, *args, pretty_print=False,
+                           q_name='Get JSON for pub'):
+        return_clause_hack = ", primary.title as title, " \
+                             "{ " \
+                             "PubMed: coalesce(primary.PMID, ''), "  \
+                             "FlyBase: coalesce(primary.FlyBase, ''), " \
+                             "DOI: coalesce(primary.DOI, '') } as pub_links "
+
+        return query_builder(
+            query_short_forms=['FBrf0221438'],
+            query_labels=['Individual', 'pub'],
+            clauses=[self.term(),
+                     self.dataSet_license(prel='has_reference')]
+        ) + return_clause_hack
+
+
     def template_term_info(self, short_form: list, *args, pretty_print=False,
                            q_name='Get JSON for Template'):
         return query_builder(query_labels=['Template'],
