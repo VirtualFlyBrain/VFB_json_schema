@@ -201,7 +201,7 @@ class TermInfoRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
-    def test_pub_TermInfo(self):
+    def test_pub(self):
         query = self.ql.pub_term_info(short_form=['FBrf0221438'])
         r = self.qw.test(t=self,
                          query=query)

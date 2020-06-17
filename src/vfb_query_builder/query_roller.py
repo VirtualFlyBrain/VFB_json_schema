@@ -504,11 +504,12 @@ class QueryLibrary(QueryLibraryCore):
 
     def pub_term_info(self, short_form: list, *args, pretty_print=False,
                            q_name='Get JSON for pub'):
-        return_clause_hack = ", primary.title as title, " \
-                             "{ " \
+        return_clause_hack = ", {" \
+                             "title: coalesce(primary.title, '') ," \
                              "PubMed: coalesce(primary.PMID, ''), "  \
                              "FlyBase: coalesce(primary.FlyBase, ''), " \
-                             "DOI: coalesce(primary.DOI, '') } as pub_links "
+                             "DOI: coalesce(primary.DOI, '') }" \
+                             "AS pub_specific_content"
 
         return query_builder(
             query_short_forms=['FBrf0221438'],
