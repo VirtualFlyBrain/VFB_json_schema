@@ -1,5 +1,5 @@
 import unittest
-from vfb_query_builder.query_roller import QueryLibrary
+from vfb_query_builder.query_roller import QueryLibrary, query_builder
 from .test_tools import TestWrapper
 
 
@@ -8,6 +8,7 @@ class QueryRollerTest(unittest.TestCase):
     def setUp(self):
         self.ql = QueryLibrary()
         self.qw = TestWrapper('vfb_query.json')
+
         print("Running", self.id().split('.')[1:])
 
     def test_anat_2_ep_query(self):
@@ -33,6 +34,13 @@ class QueryRollerTest(unittest.TestCase):
 
     def test_all_datasets_query(self):
         query = self.ql.all_datasets_query()
+        print("Testing and printing first result in list only.")
+        r = self.qw.test(t=self,
+                         query=query, single=False)
+
+    def test_type_anatomy_image_query(self):
+        query = query_builder(query_short_forms=["FBbt_00007422"],
+                              clauses=[self.ql.type_anatomy_channel_image()])
         print("Testing and printing first result in list only.")
         r = self.qw.test(t=self,
                          query=query, single=False)

@@ -281,6 +281,20 @@ class QueryLibraryCore:
                  " ELSE collect (" + self._channel_image_return + ") END AS channel_image",
             vars=["channel_image"])
 
+    def type_anatomy_channel_image(self):
+        return Clause(
+            MATCH=Template("MATCH (primary:Class) WHERE primary.short_form IN $ssf WITH primary " 
+                           "MATCH (primary)<-[:SUBCLASSOF*0..]-(c2:Class)<-[:INSTANCEOF]-(i:Individual)"
+                           "" + self._channel_image_match % ', i'),
+            WITH="c2, i",
+            RETURN="CASE WHEN channel IS NULL THEN [] "
+                   "ELSE collect({ type: collect(distinct(%s), anatomy: %s, channel_image: %s })"
+                   "AS type_anatomy_channel_image" % (roll_min_node_info("c2"),
+                                                      roll_min_node_info("i"),
+                                                      self._channel_image_return),
+            vars=["type_anatomy_channel_image"]
+        )
+
     def anatomy_channel_image(self):
         return Clause(
             MATCH=Template(
@@ -630,6 +644,10 @@ class QueryLibrary(QueryLibraryCore):
                                       pub,
                                       li,
                                       counts])
+
+    def anat_image_query(self, short_forms: List):
+        return query_builder(query_short_forms=short_forms, clauses=[self.term(), self.anatomy_channel_image()])
+
 
 
 def term_info_export(escape=True):
