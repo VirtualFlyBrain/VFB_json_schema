@@ -18,7 +18,7 @@ class TestWrapper:
         base = 'file://' + pwdl + '/json_schema/'
         self.V = get_validator(pwdl + "/json_schema/" + schema,
                                base_uri=base)
-        self.nc = neo4j_connect('http://pdb-dev.virtualflybrain.org', 'neo4j', 'neo4j')
+        self.nc = neo4j_connect('http://pdb.p2.virtualflybrain.org', 'neo4j', 'neo4j')
 
     def test(self, t, query, single=True, print_result=True, print_query=True):
 
