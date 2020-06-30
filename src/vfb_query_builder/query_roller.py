@@ -449,9 +449,12 @@ class QueryLibrary(QueryLibraryCore):
                     *args,
                     pretty_print=False,
                     q_name='Get JSON for Class',
-                    additional_clauses=None):
+                    additional_clauses=None,
+                    images=True):
         if additional_clauses is None:
             additional_clauses = []
+        if images:
+            additional_clauses.append(self.anatomy_channel_image())
         return query_builder(query_labels=['Class'],
                              query_short_forms=short_form,
                              clauses=[self.term(),
@@ -459,7 +462,6 @@ class QueryLibrary(QueryLibraryCore):
                                       self.relationships(),
                                       self.related_individuals(),
                                       self.xrefs(),
-                                      self.anatomy_channel_image(),
                                       self.pub_syn(),
                                       self.def_pubs()] + additional_clauses,
                              q_name=q_name,
@@ -485,20 +487,19 @@ class QueryLibrary(QueryLibraryCore):
 
 
     def dataset_term_info(self, short_form: list, *args, pretty_print=False,
-                      q_name='Get JSON for DataSet'):
+                      q_name='Get JSON for DataSet', images=True):
+
+        clauses = [self.term(return_extensions=roll_dataset_return_dict('primary',
+                                                                        typ='core')),
+                   self.xrefs(),
+                   self.license(),
+                   self.pubs(),
+                   self.dataset_counts()]
+        if images:
+            clauses.append(self.anatomy_channel_image())
         return query_builder(query_labels=['DataSet'],
                              query_short_forms=short_form,
-                             clauses=[self.term(
-                                 return_extensions=
-                                 roll_dataset_return_dict(
-                                     'primary',
-                                     typ='core')),
-                                 self.anatomy_channel_image(),
-                                 self.xrefs(),
-                                 self.license(),
-                                 self.pubs(),
-                                 self.dataset_counts()
-                             ],
+                             clauses=clauses,
                              q_name=q_name,
                              pretty_print=pretty_print)
 
@@ -652,7 +653,9 @@ class QueryLibrary(QueryLibraryCore):
                                       counts])
 
 
-def term_info_export(escape=True):
+import inspect
+
+def term_info_export(escape=True, images=True):
     # Generate a JSON with TermInto queries
     ql = QueryLibrary()
     query_methods = ['anatomical_ind_term_info',
@@ -666,9 +669,13 @@ def term_info_export(escape=True):
         # This whole approach feels a bit hacky...
         qf = getattr(ql, qm)
         q_name = qf.__kwdefaults__['q_name']
-        q = qf(short_form=['$ID'])
+        if 'images' in inspect.signature(qf).parameters.keys():
+            q = qf(short_form=['$ID'], images=images)
+        else:
+            q = qf(short_form=['$ID'])
         if escape:
             out[q_name] = saxutils.escape(q)
         else:
             out[q_name] = q
     return json.dumps(out)
+

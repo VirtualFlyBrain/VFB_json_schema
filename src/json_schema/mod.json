@@ -13,9 +13,11 @@
       ],
       "properties": {
         "short_form": {
+          "description": "An ID that forms the terminal part of an iri - following a '/' or a '#'.",
           "type": "string"
         },
         "iri": {
+          "description": "The fully namespaced identifier of term.",
           "type": "string"
         },
         "label": {
@@ -23,7 +25,7 @@
           "type": "string"
         },
         "types": {
-          "description": "A list of term types, corresponding to neo4j:labels in the VFB production database and to the gross typing system used by VFB: Geppetto.",
+          "description": "A list of (gross) term types, corresponding to neo4j:labels in the VFB production database and to the gross typing system used by VFB: Geppetto.",
           "type": "array",
           "items": {
             "type": "string"
@@ -63,6 +65,7 @@
       "type": "object",
       "properties": {
         "core": {
+          "description": "Minimal info about a term (short_form, iri, label, types).",
           "type": "object",
           "$ref": "#/definitions/minimal_entity_info"
         },
