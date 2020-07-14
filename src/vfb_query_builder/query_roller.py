@@ -281,19 +281,26 @@ class QueryLibraryCore:
                  " ELSE collect (" + self._channel_image_return + ") END AS channel_image",
             vars=["channel_image"])
 
-    def type_anatomy_channel_image(self):
+ #   def type_anatomy_channel_image(self):
+ #       return Clause(
+ #           MATCH=Template("MATCH (primary:Class) WHERE primary.short_form IN $ssf WITH primary "
+ #                          "MATCH (primary)<-[:SUBCLASSOF*0..]-(c2:Class)<-[:INSTANCEOF]-(i:Individual)"
+ #                          "" + self._channel_image_match % ', i'),
+ #           WITH="c2, i",
+ #           RETURN="CASE WHEN channel IS NULL THEN [] "
+ #                  "ELSE collect({ type: collect(distinct(%s), anatomy: %s, channel_image: %s })"
+ #                  "AS type_anatomy_channel_image" % (roll_min_node_info("c2"),
+ #                                                     roll_min_node_info("i"),
+ #                                                     self._channel_image_return),
+ #           vars=["type_anatomy_channel_image"]
+ #       )
+
+    def image_type(self):
         return Clause(
-            MATCH=Template("MATCH (primary:Class) WHERE primary.short_form IN $ssf WITH primary " 
-                           "MATCH (primary)<-[:SUBCLASSOF*0..]-(c2:Class)<-[:INSTANCEOF]-(i:Individual)"
-                           "" + self._channel_image_match % ', i'),
-            WITH="c2, i",
-            RETURN="CASE WHEN channel IS NULL THEN [] "
-                   "ELSE collect({ type: collect(distinct(%s), anatomy: %s, channel_image: %s })"
-                   "AS type_anatomy_channel_image" % (roll_min_node_info("c2"),
-                                                      roll_min_node_info("i"),
-                                                      self._channel_image_return),
-            vars=["type_anatomy_channel_image"]
-        )
+            MATCH=Template("OPTIONAL MATCH ($pvar)-[:INSTANCEOF]->(typ:Class) "),
+            WITH="CASE WHEN typ is null THEN [] "
+                 "ELSE collect (%s) END AS types" % roll_min_node_info('typ'),
+        vars=["types"])
 
     def anatomy_channel_image(self):
         return Clause(
@@ -646,9 +653,12 @@ class QueryLibrary(QueryLibraryCore):
                                       counts])
 
     def anat_image_query(self, short_forms: List):
-        return query_builder(query_short_forms=short_forms, clauses=[self.term(), self.anatomy_channel_image()])
-
-
+        return query_builder(query_short_forms=short_forms,
+                             query_labels=['Individual'],
+                             clauses=[self.term(),
+                                      self.channel_image(),
+                                      self.image_type()],
+                             pretty_print=True)
 
 def term_info_export(escape=True):
     # Generate a JSON with TermInto queries
