@@ -138,13 +138,13 @@ def roll_pub_return(var):
 # For this it helps to contruct return as a dict
 
 def roll_license_return_dict(var):
-    return {'icon': "coalesce(%s.license_logo, '')" % var,
-            'link': "coalesce(%s.license_url, '')" % var}
+    return {'icon': "coalesce(%s.license_logo[0], '')" % var,
+            'link': "coalesce(%s.license_url[0], '')" % var}
 
 
 def roll_dataset_return_dict(var, typ=''):
     return {
-        "link": "coalesce(%s.dataset_link, '')" % var,
+        "link": "coalesce(%s.dataset_link[0], '')" % var,
     }
 
 
@@ -176,8 +176,8 @@ class QueryLibraryCore:
         self.dataset_spec_fields = {
             "link": "coalesce(%s.dataset_link, '')"
         }
-        self.license_spec_fields = {'icon': "coalesce(%s.license_logo, '')",
-                                    'link': "coalesce(%s.license_url, '')x"
+        self.license_spec_fields = {'icon': "coalesce(%s.license_logo[0], '')",
+                                    'link': "coalesce(%s.license_url[0], '')x"
                                     }
 
     def term(self, return_extensions=None):
@@ -196,14 +196,14 @@ class QueryLibraryCore:
 
     def xrefs(self):
         match_self_xref = "OPTIONAL MATCH (s:Site { short_form: primary.self_xref }) "
-        match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-($pvar$labels) "
+        match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:database_cross_reference]-($pvar$labels) "
 
         xr = "CASE WHEN s IS NULL THEN %s ELSE COLLECT" \
-             "({ link_base: s.link_base, " \
+             "({ link_base: coalesce(s.link_base[0], ''), " \
              "accession: coalesce(%s, ''), " \
              "link_text: primary.label + ' on ' + s.label, " \
-             "homepage: coalesce(s.homepage, ''), " \
-             "site: %s, icon: coalesce(s.link_icon_url, ''),  " \
+             "homepage: coalesce(s.homepage[0], ''), " \
+             "site: %s, icon: coalesce(s.link_icon_url[0], ''),  " \
              "link_postfix: coalesce(s.link_postfix, '')}) "  # Should be $pvar$labels not primary, but need sub on WITH!
         xrs = "END AS self_xref, $v"  # Passing vars
         xrx = "+ self_xref END AS xrefs"
@@ -213,7 +213,7 @@ class QueryLibraryCore:
                            % ('[]', 'primary.short_form',
                               roll_min_node_info("s"))),
             WITH='  '.join([xr, xrx]) % ('self_xref',
-                                         'dbx.accession',
+                                         'dbx.accession[0]',
                                          roll_min_node_info("s")),
             vars=["xrefs"])
 
@@ -267,7 +267,7 @@ class QueryLibraryCore:
 
         self._channel_image_return = "{ channel: %s, imaging_technique: %s," \
                                      "image: { template_channel : %s, template_anatomy: %s," \
-                                     "image_folder: irw.folder, " \
+                                     "image_folder: COALESCE(irw.folder[0], ''), " \
                                      "index: coalesce(irw.index, []) + [] }" \
                                      "}" % (roll_min_node_info('channel'),
                                             roll_min_node_info('technique'),
@@ -299,7 +299,7 @@ class QueryLibraryCore:
             "OPTIONAL MATCH (technique:Class)<-[:is_specified_output_of]"
             "-(channel:Individual)"
             "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar$labels) "
-            "WHERE has(irw.index) "
+            "WHERE technique.short_form = 'FBbi_00000224' "
             "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
             "UNWIND painted_domains AS pd "
             "MATCH (channel:Individual { short_form: pd.channel.short_form})"
@@ -316,9 +316,10 @@ class QueryLibraryCore:
         MATCH=Template(
             "MATCH (channel:Individual)<-[irw:in_register_with]-"
             "(channel:Individual)-[:depicts]->($pvar$labels)"),
-        WITH="{ index: coalesce(irw.index, []) + [], "
+        WITH="{ index: coalesce(apoc.convert.toInteger(irw.index), []) + [], "
              "extent: irw.extent, center: irw.center, voxel: irw.voxel, "
-             "orientation: irw.orientation, image_folder: irw.folder, "
+             "orientation: coalesce(irw.orientation[0], ''), "
+             "image_folder: coalesce(irw.folder[0],''), "
              "channel: %s } as template_channel" % roll_min_node_info("channel"),
         vars=["template_channel"])
 
@@ -327,8 +328,8 @@ class QueryLibraryCore:
     def _set_pub_common_query_elements(self):
         # This is only a function for ease of code editing - places declaration next to where it is used.
         self._pub_return = "{ core: %s, " \
-                           "PubMed: coalesce(p.PMID, ''), " \
-                           "FlyBase: coalesce(p.FlyBase, ''), DOI: coalesce(p.DOI, '') } " \
+                           "PubMed: coalesce(p.PMID[0], ''), " \
+                           "FlyBase: coalesce(p.FlyBase[0], ''), DOI: coalesce(p.DOI[0], '') } " \
                            "" % roll_min_node_info("p")
 
         self._syn_return = "{ label: coalesce(rp.synonym, ''), " \
@@ -606,7 +607,7 @@ class QueryLibrary(QueryLibraryCore):
         counts.__setattr__('pvar', 'ds')
         return query_builder(query_short_forms=[short_form],
                              clauses=[self.template_2_datasets_wrapper(),
-                                      # aci, # commenting as too slow w/o limit
+                                      aci, # commenting as too slow w/o limit
                                       pub,
                                       li,
                                       counts])
@@ -626,7 +627,7 @@ class QueryLibrary(QueryLibraryCore):
         counts = self.dataset_counts()
         counts.__setattr__('pvar', 'ds')
         return query_builder(clauses=[self.all_datasets_wrapper(),
-                                      # aci # commenting as too slow w/o limit
+                                      aci, # commenting as too slow w/o limit
                                       pub,
                                       li,
                                       counts])

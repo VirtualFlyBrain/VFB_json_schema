@@ -3,6 +3,7 @@ from vfb_query_builder.schema_test_suite import get_validator, validate
 import datetime
 import json
 import os
+import warnings
 
 
 class TestWrapper:
@@ -19,6 +20,16 @@ class TestWrapper:
         self.V = get_validator(pwdl + "/json_schema/" + schema,
                                base_uri=base)
         self.nc = neo4j_connect('http://pdb.p2.virtualflybrain.org', 'neo4j', 'neo4j')
+
+    def test_content(self, t, d):
+        # test if dict?
+        if type(d) == dict:
+            for k,v in d.items():
+                if not v:
+                    warnings.warn("%s is empty" % k)
+                t.assertTrue(bool(v))
+            #    self.test_content(t, v)
+
 
     def test(self, t, query, single=True, print_result=True, print_query=True):
 
@@ -45,6 +56,7 @@ class TestWrapper:
             if single: t.assertEqual(len(results), 1)
             validation_status = validate(self.V, results[0])
             t.assertTrue(validation_status)
+            self.test_content(t, results[0])
             return results
         else:
             return False

@@ -92,7 +92,7 @@ class TermInfoRollerTest(unittest.TestCase):
         query = query_builder(query_labels=["Individual"],
                               clauses=[self.ql.term(),
                                        self.ql.xrefs()],
-                              query_short_forms=['VFB_00020249'])
+                              query_short_forms=['VFB_00010249'])
         r = self.qw.test(t=self,
                          query=query)
 
