@@ -44,12 +44,11 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query, single=False)
 
-#   def test_type_anatomy_image_query(self):
-#        query = query_builder(query_short_forms=["FBbt_00007422"],
-#                              clauses=[self.ql.type_anatomy_channel_image()])
-#        print("Testing and printing first result in list only.")
-#        r = self.qw.test(t=self,
-#                         query=query, single=False)
+    def test_anatomy_query(self):
+        query = self.ql.anat_query(short_forms=['FBbt_00048350', 'FBbt_00047826', 'FBbt_00111338', 'FBbt_00048346', 'FBbt_00047227', 'FBbt_00007445', 'FBbt_00003864', 'FBbt_00007452', 'FBbt_00111354', 'FBbt_00007476', 'FBbt_00111661', 'FBbt_00049514', 'FBbt_00100470', 'FBbt_00100225', 'FBbt_00110570', 'FBbt_00111685', 'FBbt_00047723', 'FBbt_00110086', 'FBbt_00067349', 'FBbt_00007444', 'FBbt_00048354', 'FBbt_00003879', 'FBbt_00111481', 'FBbt_00067369', 'FBbt_00111359', 'FBbt_00067350', 'FBbt_00111749', 'FBbt_00100485', 'FBbt_00003994', 'FBbt_00007437', 'FBbt_00110427', 'FBbt_00110983', 'FBbt_00047681', 'FBbt_00067123', 'FBbt_00111715', 'FBbt_00047724', 'FBbt_00047825', 'FBbt_00047429', 'FBbt_00048353', 'FBbt_00111470', 'FBbt_00003875', 'FBbt_00067021', 'FBbt_00100381', 'FBbt_00111355', 'FBbt_00047720', 'FBbt_00067364', 'FBbt_00100388', 'FBbt_00048520', 'FBbt_00003880', 'FBbt_00100489'])
+        print("Testing and printing first result in list only.")
+        r = self.qw.test(t=self,
+                         query=query, single=False)
 
 
 if __name__ == '__main__':
