@@ -120,7 +120,7 @@ def roll_min_node_info(var):
     """Rolls core JSON (specifying minimal info about an entity.
     var: the variable name for the entity within this cypher clause."""
     return "{ short_form: %s.short_form, label: coalesce(%s.label,''), " \
-           "iri: %s.iri, types: labels(%s) } " % (var, var, var, var)
+           "iri: %s.iri, types: labels(%s), symbol: coalesce(%s.`annotation-IAO_0000028`[0], '')} " % (var, var, var, var, var)
 
 
 def roll_min_edge_info(var):

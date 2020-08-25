@@ -28,6 +28,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "symbol": {
+          "description": "",
+          "type": "string"
         }
       }
     },
