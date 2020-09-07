@@ -300,6 +300,7 @@ class QueryLibraryCore:
             "-(channel:Individual)"
             "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar$labels) "
             "WHERE technique.short_form = 'FBbi_00000224' "
+            "AND exists(irw.index) "
             "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
             "UNWIND painted_domains AS pd "
             "MATCH (channel:Individual { short_form: pd.channel.short_form})"
