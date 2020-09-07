@@ -28,11 +28,13 @@ script:
   - grep -r '= neo4j_connect(' .
   - export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
   - cd src
-  - travis_wait 60 |
+  - |
     for TEST in $RUNTESTS;
     do
       /bin/echo -e "\e[1;35mRunning $TEST\e[0m"
-      python -m $TEST 2> log.log
+      /bin/echo -e "travis_fold:start:TestRunning" || true
+      python -m $TEST 2>&1 | tee log.log
+      /bin/echo -e "travis_fold:end:TestRunning" || true
       if grep -q FAIL log.log; 
       then 
         /bin/echo -e "\e[1;31m$(cat log.log)";
