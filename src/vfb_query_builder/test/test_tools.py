@@ -56,7 +56,7 @@ class TestWrapper:
             if single: t.assertEqual(len(results), 1)
             validation_status = validate(self.V, results[0])
             t.assertTrue(validation_status)
-            self.test_content(t, results[0])
+#            self.test_content(t, results[0])
             return results
         else:
             return False
