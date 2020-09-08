@@ -13,7 +13,7 @@ class TermInfoRollerTest(unittest.TestCase):
     def test_class_term(self):
         query = query_builder(query_labels=["Class"],
                               clauses=[self.ql.term()],
-                              query_short_forms=['FBbt_00007422'])
+                              query_short_forms=['FBbt_00067353'])
         r = self.qw.test(t=self,
                          query=query)
 
@@ -36,7 +36,7 @@ class TermInfoRollerTest(unittest.TestCase):
         query = query_builder(query_labels=["Class"],
                               clauses=[self.ql.term(), 
                                        self.ql.xrefs()],
-                              query_short_forms=['FBti0143498'])
+                              query_short_forms=['VFBexp_FBtp0123937FBtp0120068'])
         r = self.qw.test(t=self,
                          query=query)
 

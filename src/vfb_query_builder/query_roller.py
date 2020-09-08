@@ -333,12 +333,12 @@ class QueryLibraryCore:
                            "FlyBase: coalesce(p.FlyBase[0], ''), DOI: coalesce(p.DOI[0], '') } " \
                            "" % roll_min_node_info("p")
 
-        self._syn_return = "{ label: coalesce(rp.synonym, ''), " \
-                           "scope: coalesce(rp.scope, ''), type: coalesce(rp.cat,'') } "
+        self._syn_return = "{ label: coalesce(rp.value[0], ''), " \
+                           "scope: coalesce(rp.scope, ''), has_synonym_type: coalesce(rp.has_synonym_type,'') } "
 
     def def_pubs(self):
         return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
-                                     "[rp:has_reference { typ: 'def'}]->(p:pub) "),
+                                     "[rp:references { typ: 'definition'}]->(p:pub) "),
                       WITH="CASE WHEN p is null THEN "
                            "[] ELSE collect(" + self._pub_return
                            + ") END AS def_pubs",
@@ -346,7 +346,7 @@ class QueryLibraryCore:
 
     def pub_syn(self):
         return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
-                                     "[rp:has_reference { typ: 'syn'}]->(p:pub) "),
+                                     "[rp:references]->(p:pub) where rp.typ in ['has_exact_synonym', 'has_narrow_synonym', 'has_broad_synonym', 'has_related_synonym']"),
                       WITH="CASE WHEN p is null THEN [] "
                            "ELSE collect({ pub: %s, synonym: %s }) END AS pub_syn"
                            % (self._pub_return, self._syn_return),
@@ -608,7 +608,7 @@ class QueryLibrary(QueryLibraryCore):
         counts.__setattr__('pvar', 'ds')
         return query_builder(query_short_forms=[short_form],
                              clauses=[self.template_2_datasets_wrapper(),
-                                      aci, # commenting as too slow w/o limit
+                                     # aci, # commenting as too slow w/o limit
                                       pub,
                                       li,
                                       counts])
@@ -628,7 +628,7 @@ class QueryLibrary(QueryLibraryCore):
         counts = self.dataset_counts()
         counts.__setattr__('pvar', 'ds')
         return query_builder(clauses=[self.all_datasets_wrapper(),
-                                      aci, # commenting as too slow w/o limit
+                                      # aci, # commenting as too slow w/o limit
                                       pub,
                                       li,
                                       counts])
