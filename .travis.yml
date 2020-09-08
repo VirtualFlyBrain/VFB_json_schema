@@ -20,10 +20,12 @@ before_script:
   - git clone https://github.com/VirtualFlyBrain/VFB_neo4j.git
 
 script:
+  - /bin/echo -e "travis_fold:start:TestSetup" || true
   - sed -i "s|neo4j_connect('http://.*\.virtualflybrain\.org', 'neo4j', 'neo4j')|neo4j_connect('http://$VFBPDB', 'neo4j', 'neo4j')|g" $TRAVIS_BUILD_DIR/src/vfb_query_builder/test/test_tools.py
   - grep -r '= neo4j_connect(' .
   - export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
   - cd src
+  - - /bin/echo -e "travis_fold:end:TestSetup" || true
   - /bin/echo -e "\e[1;35mRunning results_schema_tests\e[0m"
   - travis_wait 40 python -m vfb_query_builder.test.results_schema_tests 2> log.log
   - |
