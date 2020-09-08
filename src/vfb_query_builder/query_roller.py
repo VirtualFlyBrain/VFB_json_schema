@@ -306,7 +306,7 @@ class QueryLibraryCore:
             "MATCH (channel:Individual { short_form: pd.channel.short_form})"
             "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
         WITH="collect({ anatomical_type: %s ,"
-             " anatomical_individual: %s, folder: pd.irw.folder, "
+             " anatomical_individual: %s, folder: pd.irw.folder[0], "
              "center: coalesce (pd.irw.center, []), "
              "index: [] + coalesce (pd.irw.index, []) })"
              " AS template_domains" % (roll_min_node_info("c"),
