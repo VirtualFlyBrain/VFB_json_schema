@@ -9,13 +9,9 @@ python:
 env:
   matrix:
   - VFBPDB=pdb.virtualflybrain.org 
-    RUNTESTS='vfb_query_builder.test.results_schema_tests vfb_query_builder.test.TermInfo_schema_tests vfb_query_builder.test.query_roller_tests'
   - VFBPDB=pdb-alpha.virtualflybrain.org
-    RUNTESTS='vfb_query_builder.test.results_schema_tests vfb_query_builder.test.TermInfo_schema_tests vfb_query_builder.test.query_roller_tests'
   - VFBPDB=pdb-dev.virtualflybrain.org
-    RUNTESTS='vfb_query_builder.test.results_schema_tests vfb_query_builder.test.TermInfo_schema_tests vfb_query_builder.test.query_roller_tests'
   - VFBPDB=pdb.p2.virtualflybrain.org
-    RUNTESTS='vfb_query_builder.test.results_schema_tests vfb_query_builder.test.TermInfo_schema_tests vfb_query_builder.test.query_roller_tests'
 
 install:
   - pip install -r requirements.txt
@@ -24,16 +20,16 @@ before_script:
   - git clone https://github.com/VirtualFlyBrain/VFB_neo4j.git
 
 script:
+  - /bin/echo -e "travis_fold:start:TestSetup" || true
   - sed -i "s|neo4j_connect('http://.*\.virtualflybrain\.org', 'neo4j', 'neo4j')|neo4j_connect('http://$VFBPDB', 'neo4j', 'neo4j')|g" $TRAVIS_BUILD_DIR/src/vfb_query_builder/test/test_tools.py
   - grep -r '= neo4j_connect(' .
   - export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
   - cd src
+  - /bin/echo -e "travis_fold:end:TestSetup" || true
+  - /bin/echo -e "\e[1;35mRunning results_schema_tests\e[0m"
+  - travis_wait 40 python -m vfb_query_builder.test.results_schema_tests 2> log.log
   - |
-    for TEST in $RUNTESTS;
-    do
-      /bin/echo -e "\e[1;35mRunning $TEST\e[0m"
-      python -m $TEST 2> log.log
-      if grep -q FAIL log.log; 
+    if grep -q FAIL log.log; 
       then 
         /bin/echo -e "\e[1;31m$(cat log.log)";
         /bin/echo -e "\e[0m";
@@ -42,6 +38,29 @@ script:
         /bin/echo -e "\e[1;32m$(cat log.log)";
         /bin/echo -e "\e[0m";
       fi;
-      rm log.log;
-    done;
+  - /bin/echo -e "\e[1;35mRunning TermInfo_schema_tests\e[0m"
+  - travis_wait 40 python -m vfb_query_builder.test.TermInfo_schema_tests 2> log.log
+  - |
+    if grep -q FAIL log.log; 
+      then 
+        /bin/echo -e "\e[1;31m$(cat log.log)";
+        /bin/echo -e "\e[0m";
+        exit 1;
+      else
+        /bin/echo -e "\e[1;32m$(cat log.log)";
+        /bin/echo -e "\e[0m";
+      fi;
+  - /bin/echo -e "\e[1;35mRunning query_roller_tests\e[0m"
+  - travis_wait 40 python -m vfb_query_builder.test.query_roller_tests 2> log.log
+  - |
+    if grep -q FAIL log.log; 
+      then 
+        /bin/echo -e "\e[1;31m$(cat log.log)";
+        /bin/echo -e "\e[0m";
+        exit 1;
+      else
+        /bin/echo -e "\e[1;32m$(cat log.log)";
+        /bin/echo -e "\e[0m";
+      fi;
+  - rm log.log;
 
