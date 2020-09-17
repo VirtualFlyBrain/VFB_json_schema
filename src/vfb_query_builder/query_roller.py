@@ -318,7 +318,7 @@ class QueryLibraryCore:
             "MATCH (channel:Individual)<-[irw:in_register_with]-"
             "(channel:Individual)-[:depicts]->($pvar$labels)"),
         WITH="{ index: coalesce(apoc.convert.toInteger(irw.index), []) + [], "
-             "extent: irw.extent, center: irw.center, voxel: irw.voxel, "
+             "extent: irw.extent[0], center: irw.center[0], voxel: irw.voxel[0], "
              "orientation: coalesce(irw.orientation[0], ''), "
              "image_folder: coalesce(irw.folder[0],''), "
              "channel: %s } as template_channel" % roll_min_node_info("channel"),
