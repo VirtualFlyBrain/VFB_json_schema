@@ -55,6 +55,21 @@
       "type": "string",
       "description": "A descriptive name for the query used to generate this JSON."
     },
+    "types": {
+      "type": "array",
+      "items": {
+        "$ref": "mod.json#definitions/minimal_entity_info"
+      }
+    },
+    "term": {
+      "$ref": "mod.json#definitions/term"
+    },
+    "channel_image": {
+      "type": "array",
+      "items": {
+        "$ref": "mod.json#definitions/channel_image"
+      }
+    },
     "version": {
       "type": "string",
       "description": "A version tag for the query used to generate this JSON."

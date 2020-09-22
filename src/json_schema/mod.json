@@ -28,6 +28,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "symbol": {
+          "description": "",
+          "type": "string"
         }
       }
     },
@@ -369,6 +373,53 @@
         },
         "ISBN": {
           "type": "string"
+        }
+      }
+    },
+    "pub_specific_content": {
+      "additionalProperties": false,
+      "properties": {
+        "PubMed": {
+          "type": "string"
+        },
+        "FlyBase": {
+          "type": "string"
+        },
+        "DOI": {
+          "type": "string"
+        },
+        "ISBN": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "abstract": {
+          "type": "string"
+        }
+      }
+    },
+    "neuron_specific_content": {
+      "additionalProperties": false,
+      "properties": {
+        "targeting_splits": {
+          "description": "A list of splits that target this neuron",
+          "type": "array",
+          "items": {
+          "$ref": "mod.json#definitions/minimal_entity_info"
+          }
+        }
+      }
+    },
+    "split_specific_content": {
+      "additionalProperties": false,
+      "properties": {
+        "targeting_splits": {
+          "description": "A neuron types targeted by this split.",
+          "type": "array",
+          "items": {
+          "$ref": "mod.json#definitions/minimal_entity_info"
+          }
         }
       }
     },

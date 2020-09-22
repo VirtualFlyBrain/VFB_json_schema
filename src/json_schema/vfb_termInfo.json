@@ -113,6 +113,9 @@
       "items": {
         "$ref": "mod.json#definitions/minimal_entity_info"
       }
+    },
+    "pub_specific_content": {
+      "$ref": "mod.json#definitions/pub_specific_content"
     }
   }
 }

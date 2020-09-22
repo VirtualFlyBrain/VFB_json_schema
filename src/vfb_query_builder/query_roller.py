@@ -57,6 +57,7 @@ class Clause:
     starting_labels: list = field(default_factory=list)
     pvar: str = 'primary'
     limit: str = ''
+    prel: str = ''
 
     def get_clause(self, varz, pretty_print=True):
         """Generate a cypher string using the attributes of this clause object,
@@ -72,6 +73,7 @@ class Clause:
                                    v=', '.join(varz),
                                    ssf=str(self.starting_short_forms),
                                    labels=':'.join(l),
+                                   prel=self.prel,
                                    limit=self.limit),
              'WITH ' + ','.join([self.WITH] + varz)])
 
@@ -118,7 +120,7 @@ def roll_min_node_info(var):
     """Rolls core JSON (specifying minimal info about an entity.
     var: the variable name for the entity within this cypher clause."""
     return "{ short_form: %s.short_form, label: coalesce(%s.label,''), " \
-           "iri: %s.iri, types: labels(%s) } " % (var, var, var, var)
+           "iri: %s.iri, types: labels(%s), symbol: coalesce(%s.`annotation-IAO_0000028`[0], '')} " % (var, var, var, var, var)
 
 
 def roll_min_edge_info(var):
@@ -281,6 +283,27 @@ class QueryLibraryCore:
                  " ELSE collect (" + self._channel_image_return + ") END AS channel_image",
             vars=["channel_image"])
 
+ #   def type_anatomy_channel_image(self):
+ #       return Clause(
+ #           MATCH=Template("MATCH (primary:Class) WHERE primary.short_form IN $ssf WITH primary "
+ #                          "MATCH (primary)<-[:SUBCLASSOF*0..]-(c2:Class)<-[:INSTANCEOF]-(i:Individual)"
+ #                          "" + self._channel_image_match % ', i'),
+ #           WITH="c2, i",
+ #           RETURN="CASE WHEN channel IS NULL THEN [] "
+ #                  "ELSE collect({ type: collect(distinct(%s), anatomy: %s, channel_image: %s })"
+ #                  "AS type_anatomy_channel_image" % (roll_min_node_info("c2"),
+ #                                                     roll_min_node_info("i"),
+ #                                                     self._channel_image_return),
+ #           vars=["type_anatomy_channel_image"]
+ #       )
+
+    def image_type(self):
+        return Clause(
+            MATCH=Template("OPTIONAL MATCH ($pvar)-[:INSTANCEOF]->(typ:Class) "),
+            WITH="CASE WHEN typ is null THEN [] "
+                 "ELSE collect (%s) END AS types" % roll_min_node_info('typ'),
+        vars=["types"])
+
     def anatomy_channel_image(self):
         return Clause(
             MATCH=Template(
@@ -377,10 +400,10 @@ class QueryLibraryCore:
             vars=['target_neurons'])
 
 
-    def dataSet_license(self):
+    def dataSet_license(self, prel='has_source'):
         return Clause(
             MATCH=Template("OPTIONAL MATCH "
-                           "($pvar$labels)-[:has_source]->(ds:DataSet)"
+                           "($pvar$labels)-[:$prel]-(ds:DataSet)"
                            "-[:has_license]->(l:License)"),
             WITH="COLLECT ({ dataset: %s, license: %s}) "
                  "AS dataset_license" % (roll_node_map(var='ds',
@@ -389,7 +412,8 @@ class QueryLibraryCore:
                                          roll_node_map(var='l',
                                                        d=roll_license_return_dict('l'),
                                                        typ='core')),
-            vars=['dataset_license'])
+            vars=['dataset_license'],
+            prel=prel)
 
     def license(self):
         return Clause(
@@ -501,6 +525,23 @@ class QueryLibrary(QueryLibraryCore):
                              ],
                              q_name=q_name,
                              pretty_print=pretty_print)
+
+    def pub_term_info(self, short_form: list, *args, pretty_print=False,
+                           q_name='Get JSON for pub'):
+        return_clause_hack = ", {" \
+                             "title: coalesce(primary.title, '') ," \
+                             "PubMed: coalesce(primary.PMID, ''), "  \
+                             "FlyBase: coalesce(primary.FlyBase, ''), " \
+                             "DOI: coalesce(primary.DOI, '') }" \
+                             "AS pub_specific_content"
+
+        return query_builder(
+            query_short_forms=['FBrf0221438'],
+            query_labels=['Individual', 'pub'],
+            clauses=[self.term(),
+                     self.dataSet_license(prel='has_reference')]
+        ) + return_clause_hack
+
 
     def template_term_info(self, short_form: list, *args, pretty_print=False,
                            q_name='Get JSON for Template'):
@@ -634,6 +675,20 @@ class QueryLibrary(QueryLibraryCore):
                                       li,
                                       counts])
 
+    def anat_image_query(self, short_forms: List):
+        return query_builder(query_short_forms=short_forms,
+                             query_labels=['Individual'],
+                             clauses=[self.term(),
+                                      self.channel_image(),
+                                      self.image_type()],
+                             pretty_print=True)
+
+    def anat_query(self, short_forms: List):
+        return query_builder(query_short_forms=short_forms,
+                             query_labels=['Class', 'Anatomy'],
+                             clauses=[self.term(),
+                                      self.anatomy_channel_image()],
+                             pretty_print=True)
 
 def term_info_export(escape=True):
     # Generate a JSON with TermInto queries
