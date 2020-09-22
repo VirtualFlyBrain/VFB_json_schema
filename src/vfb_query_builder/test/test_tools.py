@@ -1,4 +1,4 @@
-from uk.ac.ebi.vfb.neo4j.neo4j_tools import neo4j_connect, results_2_dict_list
+from vfb_connect.neo.neo4j_tools import Neo4jConnect, dict_cursor
 from vfb_query_builder.schema_test_suite import get_validator, validate
 import datetime
 import json
@@ -19,7 +19,7 @@ class TestWrapper:
         base = 'file://' + pwdl + '/json_schema/'
         self.V = get_validator(pwdl + "/json_schema/" + schema,
                                base_uri=base)
-        self.nc = neo4j_connect('http://pdb.p2.virtualflybrain.org', 'neo4j', 'neo4j')
+        self.nc = Neo4jConnect('http://pdb.p2.virtualflybrain.org', 'neo4j', 'neo4j')
 
     def test_content(self, t, d, hard_fail = False):
         # test if dict?
@@ -51,7 +51,7 @@ class TestWrapper:
         t.assertTrue(s, "Cypher query failed.")
         if s:
             print("Query time (inc API call): %d ms" % time_in_ms)
-            results = results_2_dict_list(s)
+            results = dict_cursor(s)
             # Only testing first result if multiple
             if print_result: print(json.dumps(results[0]))
             if single: t.assertEqual(len(results), 1)

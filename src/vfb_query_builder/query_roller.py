@@ -120,7 +120,7 @@ def roll_min_node_info(var):
     """Rolls core JSON (specifying minimal info about an entity.
     var: the variable name for the entity within this cypher clause."""
     return "{ short_form: %s.short_form, label: coalesce(%s.label,''), " \
-           "iri: %s.iri, types: labels(%s), symbol: coalesce(%s.`annotation-IAO_0000028`[0], '')} " % (var, var, var, var, var)
+           "iri: %s.iri, types: labels(%s), symbol: coalesce(%s.`IAO_0000028`[0], '')} " % (var, var, var, var, var)
 
 
 def roll_min_edge_info(var):
@@ -529,10 +529,10 @@ class QueryLibrary(QueryLibraryCore):
     def pub_term_info(self, short_form: list, *args, pretty_print=False,
                            q_name='Get JSON for pub'):
         return_clause_hack = ", {" \
-                             "title: coalesce(primary.title, '') ," \
-                             "PubMed: coalesce(primary.PMID, ''), "  \
-                             "FlyBase: coalesce(primary.FlyBase, ''), " \
-                             "DOI: coalesce(primary.DOI, '') }" \
+                             "title: coalesce(primary.title[0], '') ," \
+                             "PubMed: coalesce(primary.PMID[0], ''), "  \
+                             "FlyBase: coalesce(primary.FlyBase[0], ''), " \
+                             "DOI: coalesce(primary.DOI[0], '') }" \
                              "AS pub_specific_content"
 
         return query_builder(
