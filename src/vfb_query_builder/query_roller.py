@@ -129,8 +129,8 @@ def roll_min_edge_info(var):
 
 def roll_pub_return(var):
     s = Template("{ core: $core, "
-                 "PubMed: coalesce($v.PMID, ''), "
-                 "FlyBase: coalesce($v.FlyBase, ''), DOI: coalesce($v.DOI, '') }")
+                 "PubMed: coalesce($v.PMID[0], ''), "
+                 "FlyBase: coalesce($v.FlyBase[0], ''), DOI: coalesce($v.DOI[0], '') }")
     return s.substitute(core=roll_min_node_info(var), v=var)
 
 
@@ -155,7 +155,7 @@ def roll_node_map(var: str, d: dict, typ=''):
         elif typ == 'extended_core':
             d.update({'core': roll_min_node_info(var),
                       'description': 'coalesce(%s.description, [])' % var,
-                      "comment": "coalesce(%s.`annotation-comment`, [])" % var
+                      "comment": "coalesce(%s.comment, [])" % var
                       })
 
         else:
@@ -268,7 +268,7 @@ class QueryLibraryCore:
         self._channel_image_return = "{ channel: %s, imaging_technique: %s," \
                                      "image: { template_channel : %s, template_anatomy: %s," \
                                      "image_folder: COALESCE(irw.folder[0], ''), " \
-                                     "index: coalesce(irw.index, []) + [] }" \
+                                     "index: coalesce(apoc.convert.toInteger(irw.index[0]), []) + [] }" \
                                      "}" % (roll_min_node_info('channel'),
                                             roll_min_node_info('technique'),
                                             roll_min_node_info('template'),
@@ -334,11 +334,12 @@ class QueryLibraryCore:
                            "" % roll_min_node_info("p")
 
         self._syn_return = "{ label: coalesce(rp.value[0], ''), " \
-                           "scope: coalesce(rp.scope, ''), has_synonym_type: coalesce(rp.has_synonym_type,'') } "
+                           "scope: coalesce(rp.scope, ''), type: coalesce(rp.has_synonym_type,'') } "
 
     def def_pubs(self):
         return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
-                                     "[rp:references { typ: 'definition'}]->(p:pub) "),
+                                     "[rp:has_reference]->(p:pub) "
+                                     "WHERE rp.typ[0] = 'definition' "),
                       WITH="CASE WHEN p is null THEN "
                            "[] ELSE collect(" + self._pub_return
                            + ") END AS def_pubs",
@@ -346,7 +347,7 @@ class QueryLibraryCore:
 
     def pub_syn(self):
         return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
-                                     "[rp:references]->(p:pub) where rp.typ in ['has_exact_synonym', 'has_narrow_synonym', 'has_broad_synonym', 'has_related_synonym']"),
+                                     "[rp:has_reference]->(p:pub) where rp.typ[0] in ['has_exact_synonym', 'has_narrow_synonym', 'has_broad_synonym', 'has_related_synonym']"),
                       WITH="CASE WHEN p is null THEN [] "
                            "ELSE collect({ pub: %s, synonym: %s }) END AS pub_syn"
                            % (self._pub_return, self._syn_return),
