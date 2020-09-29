@@ -695,9 +695,12 @@ def term_info_export(escape=True):
     ql = QueryLibrary()
     query_methods = ['anatomical_ind_term_info',
                      'class_term_info',
+                     'neuron_class_term_info',
+                     'split_class_term_info',
                      'dataset_term_info',
                      'license_term_info',
-                     'template_term_info']
+                     'template_term_info',
+                     'pub_term_info']
 
     out = {}
     for qm in query_methods:
