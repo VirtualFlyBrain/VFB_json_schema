@@ -356,13 +356,15 @@ class QueryLibraryCore:
                            "FlyBase: coalesce(p.FlyBase[0], ''), DOI: coalesce(p.DOI[0], '') } " \
                            "" % roll_min_node_info("p")
 
-        self._syn_return = "{ label: coalesce(rp.value[0], ''), " \
-                           "scope: coalesce(rp.scope, ''), type: coalesce(rp.has_synonym_type,'') } "
+        # temp fixes in here for list -> single !
+        self._syn_return = "{ label: coalesce(rp.value, ''), " \
+                            "scope: coalesce(rp.scope, ''), " \
+                            "type: coalesce(rp.has_synonym_type,'') } "
 
     def def_pubs(self):
         return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
                                      "[rp:has_reference]->(p:pub) "
-                                     "WHERE rp.typ[0] = 'definition' "),
+                                     "WHERE rp.typ = 'def' "),  # tmp fix rp.typ shld be []]!
                       WITH="CASE WHEN p is null THEN "
                            "[] ELSE collect(" + self._pub_return
                            + ") END AS def_pubs",
@@ -370,7 +372,7 @@ class QueryLibraryCore:
 
     def pub_syn(self):
         return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
-                                     "[rp:has_reference]->(p:pub) where rp.typ[0] in ['has_exact_synonym', 'has_narrow_synonym', 'has_broad_synonym', 'has_related_synonym']"),
+                                     "[rp:has_reference]->(p:pub) where rp.typ = 'syn'"),  # tmp fix rp.typ shld be []]!
                       WITH="CASE WHEN p is null THEN [] "
                            "ELSE collect({ pub: %s, synonym: %s }) END AS pub_syn"
                            % (self._pub_return, self._syn_return),
