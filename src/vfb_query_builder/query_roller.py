@@ -305,17 +305,25 @@ class QueryLibraryCore:
         vars=["types"])
 
     def anatomy_channel_image(self):
+
         return Clause(
             MATCH=Template(
-                "OPTIONAL MATCH ($pvar$labels)<-"
-                "[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)"
-                + self._channel_image_match % ', i'),  # Hacky sub!
+                "CALL apoc.cypher.run('WITH $pvar OPTIONAL MATCH ($pvar$labels)<- "
+                "[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)<-[:depicts]- "
+                "(channel:Individual)-[irw:in_register_with] "
+                "->(template:Individual)-[:depicts]-> "
+                "(template_anat:Individual) RETURN template, channel, template_anat, i, irw "
+                "limit 5', {$pvar:$pvar}) yield value with value.template as template, value.channel as channel,"
+                "value.template_anat as template_anat, value.i as i, value.irw as irw, $v "
+                "OPTIONAL MATCH (channel)-[:is_specified_output_of]"
+                "->(technique:Class) "),
             WITH="CASE WHEN channel IS NULL THEN [] " \
                  "ELSE COLLECT({ anatomy: %s, channel_image: %s }) " \
                  "END AS anatomy_channel_image " % (
                      roll_min_node_info("i"), self._channel_image_return),
+
             vars=["anatomy_channel_image"],
-            limit='limit 5')
+            limit='limit 5, {}) yield value')
 
     def template_domain(self):  return Clause(
         MATCH=Template(
@@ -622,8 +630,6 @@ class QueryLibrary(QueryLibraryCore):
         aci.__setattr__('pvar', 'anat')
         # Add Synaptic neuropil restriction
         aci.__setattr__('starting_labels', ['Synaptic_neuropil'])
-        # Remove limits on number images returns
-        aci.__setattr__('limit', '')
         # Return relationship on anoni
         rel = self.ep_stage()
         rel.__setattr__('pvar', 'anoni')
@@ -643,7 +649,6 @@ class QueryLibrary(QueryLibraryCore):
         # We can't set limits on numbers of images.
         # For this reason, we may have to remove aci from this
         # query for now.  Maybe add counts instead for now?
-        aci.__setattr__('limit', '')
         pub = self.pubs()
         pub.__setattr__('pvar', 'ds')
         li = self.license()
@@ -652,7 +657,7 @@ class QueryLibrary(QueryLibraryCore):
         counts.__setattr__('pvar', 'ds')
         return query_builder(query_short_forms=[short_form],
                              clauses=[self.template_2_datasets_wrapper(),
-                                     # aci, # commenting as too slow w/o limit
+                                      aci,  # commenting as too slow w/o limit
                                       pub,
                                       li,
                                       counts])
@@ -664,7 +669,6 @@ class QueryLibrary(QueryLibraryCore):
         # We can't set limits on numbers of images.
         # For this reason, we may have to remove aci from this
         # query for now.  Maybe add counts instead for now?
-        aci.__setattr__('limit', '')
         pub = self.pubs()
         pub.__setattr__('pvar', 'ds')
         li = self.license()
@@ -672,7 +676,7 @@ class QueryLibrary(QueryLibraryCore):
         counts = self.dataset_counts()
         counts.__setattr__('pvar', 'ds')
         return query_builder(clauses=[self.all_datasets_wrapper(),
-                                      # aci, # commenting as too slow w/o limit
+                                      aci, # commenting as too slow w/o limit
                                       pub,
                                       li,
                                       counts])
