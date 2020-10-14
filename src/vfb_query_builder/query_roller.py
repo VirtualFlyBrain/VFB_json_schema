@@ -533,7 +533,7 @@ class QueryLibrary(QueryLibraryCore):
                              "AS pub_specific_content"
 
         return query_builder(
-            query_short_forms=['FBrf0221438'],
+            query_short_forms=short_form,
             query_labels=['Individual', 'pub'],
             clauses=[self.term(),
                      self.dataSet_license(prel='has_reference')]
