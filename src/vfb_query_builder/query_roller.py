@@ -464,7 +464,8 @@ class QueryLibrary(QueryLibraryCore):
                                       self.relationships(),
                                       self.xrefs(),
                                       self.channel_image(),
-                                      self.related_individuals()],
+                             #         self.related_individuals()
+                                      ],
                              q_name=q_name,
                              pretty_print=pretty_print)  # Is Anatomy label sufficient here
 
@@ -491,7 +492,7 @@ class QueryLibrary(QueryLibraryCore):
                              clauses=[self.term(),
                                       self.parents(),
                                       self.relationships(),
-                                      self.related_individuals(),
+                             #         self.related_individuals(),
                                       self.xrefs(),
                                       self.anatomy_channel_image(),
                                       self.pub_syn(),
