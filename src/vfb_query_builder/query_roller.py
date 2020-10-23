@@ -123,6 +123,7 @@ def roll_min_node_info(var):
            "iri: %s.iri, types: labels(%s), symbol: coalesce(%s.`symbol`[0], '')} " % (var, var, var, var, var)
 
 
+
 def roll_min_edge_info(var):
     """Rolls core JSON (specifying minimal info about an edge.
     var: the variable name for the edge within this cypher clause."""
@@ -156,7 +157,7 @@ def roll_node_map(var: str, d: dict, typ=''):
             d.update({'core': roll_min_node_info(var)})
         elif typ == 'extended_core':
             d.update({'core': roll_min_node_info(var),
-                      'description': 'coalesce(%s.description, [])' % var,
+                      'description': "coalesce(%s.description, [])" % var,
                       "comment": "coalesce(%s.comment, [])" % var
                       })
 
@@ -361,7 +362,8 @@ class QueryLibraryCore:
         # This is only a function for ease of code editing - places declaration next to where it is used.
         self._pub_return = "{ core: %s, " \
                            "PubMed: coalesce(p.PMID[0], ''), " \
-                           "FlyBase: coalesce(p.FlyBase[0], ''), DOI: coalesce(p.DOI[0], '') } " \
+                           "FlyBase: coalesce(p.FlyBase[0], ''), " \
+                           "DOI: coalesce(p.DOI[0], '') } " \
                            "" % roll_min_node_info("p")
 
         # temp fixes in here for list -> single !
