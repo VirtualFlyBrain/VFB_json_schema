@@ -367,7 +367,7 @@ class QueryLibraryCore:
                            "" % roll_min_node_info("p")
 
         # temp fixes in here for list -> single !
-        self._syn_return = "{ label: coalesce(rp.value, ''), " \
+        self._syn_return = "{ label: coalesce(rp.value[0], ''), " \
                             "scope: coalesce(rp.scope, ''), " \
                             "type: coalesce(rp.has_synonym_type,'') } "
 
