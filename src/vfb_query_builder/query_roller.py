@@ -369,7 +369,7 @@ class QueryLibraryCore:
         # temp fixes in here for list -> single !
         self._syn_return = "{ label: coalesce(rp.value[0], ''), " \
                             "scope: coalesce(rp.scope, ''), " \
-                            "type: coalesce(rp.has_synonym_type,'') } "
+                            "type: coalesce(rp.has_synonym_type[0],'') } "
 
     def def_pubs(self):
         return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
