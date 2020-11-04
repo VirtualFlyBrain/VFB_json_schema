@@ -118,7 +118,7 @@ class TermInfoRollerTest(unittest.TestCase):
                          query=query)
 
     def test_individual(self):
-        query = self.ql.anatomical_ind_term_info(short_form=['VFB_00011179'])
+        query = self.ql.anatomical_ind_term_info(short_form=['VFB_jrchjtdq'])
         r = self.qw.test(t=self,
                          query=query)
 
