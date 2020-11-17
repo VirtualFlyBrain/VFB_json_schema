@@ -224,28 +224,13 @@
           "maxItems": 1
         },
         "center": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "minItems": 0,
-          "maxItems": 3
+          "type": "string"
         },
         "extent": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "minItems": 0,
-          "maxItems": 3
+          "type": "string"
         },
         "voxel": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "minItems": 0,
-          "maxItems": 3
+          "type": "string"
         },
         "orientation": {
           "type": "string"

@@ -120,7 +120,8 @@ def roll_min_node_info(var):
     """Rolls core JSON (specifying minimal info about an entity.
     var: the variable name for the entity within this cypher clause."""
     return "{ short_form: %s.short_form, label: coalesce(%s.label,''), " \
-           "iri: %s.iri, types: labels(%s), symbol: coalesce(%s.`annotation-IAO_0000028`[0], '')} " % (var, var, var, var, var)
+           "iri: %s.iri, types: labels(%s), symbol: coalesce(%s.`symbol`[0], '')} " % (var, var, var, var, var)
+
 
 
 def roll_min_edge_info(var):
@@ -131,8 +132,8 @@ def roll_min_edge_info(var):
 
 def roll_pub_return(var):
     s = Template("{ core: $core, "
-                 "PubMed: coalesce($v.PMID, ''), "
-                 "FlyBase: coalesce($v.FlyBase, ''), DOI: coalesce($v.DOI, '') }")
+                 "PubMed: coalesce($v.PMID[0], ''), "
+                 "FlyBase: coalesce($v.FlyBase[0], ''), DOI: coalesce($v.DOI[0], '') }")
     return s.substitute(core=roll_min_node_info(var), v=var)
 
 
@@ -140,13 +141,13 @@ def roll_pub_return(var):
 # For this it helps to contruct return as a dict
 
 def roll_license_return_dict(var):
-    return {'icon': "coalesce(%s.license_logo, '')" % var,
-            'link': "coalesce(%s.license_url, '')" % var}
+    return {'icon': "coalesce(%s.license_logo[0], '')" % var,
+            'link': "coalesce(%s.license_url[0], '')" % var}
 
 
 def roll_dataset_return_dict(var, typ=''):
     return {
-        "link": "coalesce(%s.dataset_link, '')" % var,
+        "link": "coalesce(%s.dataset_link[0], '')" % var,
     }
 
 
@@ -156,8 +157,8 @@ def roll_node_map(var: str, d: dict, typ=''):
             d.update({'core': roll_min_node_info(var)})
         elif typ == 'extended_core':
             d.update({'core': roll_min_node_info(var),
-                      'description': 'coalesce(%s.description, [])' % var,
-                      "comment": "coalesce(%s.`annotation-comment`, [])" % var
+                      'description': "coalesce(%s.description, [])" % var,
+                      "comment": "coalesce(%s.comment, [])" % var
                       })
 
         else:
@@ -178,8 +179,8 @@ class QueryLibraryCore:
         self.dataset_spec_fields = {
             "link": "coalesce(%s.dataset_link, '')"
         }
-        self.license_spec_fields = {'icon': "coalesce(%s.license_logo, '')",
-                                    'link': "coalesce(%s.license_url, '')x"
+        self.license_spec_fields = {'icon': "coalesce(%s.license_logo[0], '')",
+                                    'link': "coalesce(%s.license_url[0], '')x"
                                     }
 
     def term(self, return_extensions=None):
@@ -198,14 +199,14 @@ class QueryLibraryCore:
 
     def xrefs(self):
         match_self_xref = "OPTIONAL MATCH (s:Site { short_form: primary.self_xref }) "
-        match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:hasDbXref]-($pvar$labels) "
+        match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:database_cross_reference]-($pvar$labels) "
 
         xr = "CASE WHEN s IS NULL THEN %s ELSE COLLECT" \
-             "({ link_base: s.link_base, " \
+             "({ link_base: coalesce(s.link_base[0], ''), " \
              "accession: coalesce(%s, ''), " \
              "link_text: primary.label + ' on ' + s.label, " \
-             "homepage: coalesce(s.homepage, ''), " \
-             "site: %s, icon: coalesce(s.link_icon_url, ''),  " \
+             "homepage: coalesce(s.homepage[0], ''), " \
+             "site: %s, icon: coalesce(s.link_icon_url[0], ''),  " \
              "link_postfix: coalesce(s.link_postfix, '')}) "  # Should be $pvar$labels not primary, but need sub on WITH!
         xrs = "END AS self_xref, $v"  # Passing vars
         xrx = "+ self_xref END AS xrefs"
@@ -215,7 +216,7 @@ class QueryLibraryCore:
                            % ('[]', 'primary.short_form',
                               roll_min_node_info("s"))),
             WITH='  '.join([xr, xrx]) % ('self_xref',
-                                         'dbx.accession',
+                                         'dbx.accession[0]',
                                          roll_min_node_info("s")),
             vars=["xrefs"])
 
@@ -229,7 +230,7 @@ class QueryLibraryCore:
 
     def relationships(self): return (Clause(vars=["relationships"],
                                             MATCH=Template("OPTIONAL MATCH "
-                                                           "(o)<-[r {type:'Related'}]-($pvar$labels)"),
+                                                           "(o:Class)<-[r {type:'Related'}]-($pvar$labels)"),
                                             WITH="CASE WHEN o IS NULL THEN [] "
                                                  "ELSE COLLECT ({ relation: %s, object: %s }) "
                                                  "END AS relationships " % (roll_min_edge_info("r"),
@@ -269,8 +270,8 @@ class QueryLibraryCore:
 
         self._channel_image_return = "{ channel: %s, imaging_technique: %s," \
                                      "image: { template_channel : %s, template_anatomy: %s," \
-                                     "image_folder: irw.folder, " \
-                                     "index: coalesce(irw.index, []) + [] }" \
+                                     "image_folder: COALESCE(irw.folder[0], ''), " \
+                                     "index: coalesce(apoc.convert.toInteger(irw.index[0]), []) + [] }" \
                                      "}" % (roll_min_node_info('channel'),
                                             roll_min_node_info('technique'),
                                             roll_min_node_info('template'),
@@ -305,30 +306,39 @@ class QueryLibraryCore:
         vars=["types"])
 
     def anatomy_channel_image(self):
+
         return Clause(
             MATCH=Template(
-                "OPTIONAL MATCH ($pvar$labels)<-"
-                "[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)"
-                + self._channel_image_match % ', i'),  # Hacky sub!
+                "CALL apoc.cypher.run('WITH $pvar OPTIONAL MATCH ($pvar$labels)<- "
+                "[:has_source|SUBCLASSOF|INSTANCEOF*]-(i:Individual)<-[:depicts]- "
+                "(channel:Individual)-[irw:in_register_with] "
+                "->(template:Individual)-[:depicts]-> "
+                "(template_anat:Individual) RETURN template, channel, template_anat, i, irw "
+                "limit 5', {$pvar:$pvar}) yield value with value.template as template, value.channel as channel,"
+                "value.template_anat as template_anat, value.i as i, value.irw as irw, $v "
+                "OPTIONAL MATCH (channel)-[:is_specified_output_of]"
+                "->(technique:Class) "),
             WITH="CASE WHEN channel IS NULL THEN [] " \
                  "ELSE COLLECT({ anatomy: %s, channel_image: %s }) " \
                  "END AS anatomy_channel_image " % (
                      roll_min_node_info("i"), self._channel_image_return),
+
             vars=["anatomy_channel_image"],
-            limit='limit 5')
+            limit='limit 5, {}) yield value')
 
     def template_domain(self):  return Clause(
         MATCH=Template(
             "OPTIONAL MATCH (technique:Class)<-[:is_specified_output_of]"
             "-(channel:Individual)"
             "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar$labels) "
-            "WHERE has(irw.index) "
+            "WHERE technique.short_form = 'FBbi_00000224' "
+            "AND exists(irw.index) "
             "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
             "UNWIND painted_domains AS pd "
             "MATCH (channel:Individual { short_form: pd.channel.short_form})"
             "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
         WITH="collect({ anatomical_type: %s ,"
-             " anatomical_individual: %s, folder: pd.irw.folder, "
+             " anatomical_individual: %s, folder: pd.irw.folder[0], "
              "center: coalesce (pd.irw.center, []), "
              "index: [] + coalesce (pd.irw.index, []) })"
              " AS template_domains" % (roll_min_node_info("c"),
@@ -339,9 +349,10 @@ class QueryLibraryCore:
         MATCH=Template(
             "MATCH (channel:Individual)<-[irw:in_register_with]-"
             "(channel:Individual)-[:depicts]->($pvar$labels)"),
-        WITH="{ index: coalesce(irw.index, []) + [], "
-             "extent: irw.extent, center: irw.center, voxel: irw.voxel, "
-             "orientation: irw.orientation, image_folder: irw.folder, "
+        WITH="{ index: coalesce(apoc.convert.toInteger(irw.index), []) + [], "
+             "extent: irw.extent[0], center: irw.center[0], voxel: irw.voxel[0], "
+             "orientation: coalesce(irw.orientation[0], ''), "
+             "image_folder: coalesce(irw.folder[0],''), "
              "channel: %s } as template_channel" % roll_min_node_info("channel"),
         vars=["template_channel"])
 
@@ -350,16 +361,20 @@ class QueryLibraryCore:
     def _set_pub_common_query_elements(self):
         # This is only a function for ease of code editing - places declaration next to where it is used.
         self._pub_return = "{ core: %s, " \
-                           "PubMed: coalesce(p.PMID, ''), " \
-                           "FlyBase: coalesce(p.FlyBase, ''), DOI: coalesce(p.DOI, '') } " \
+                           "PubMed: coalesce(p.PMID[0], ''), " \
+                           "FlyBase: coalesce(p.FlyBase[0], ''), " \
+                           "DOI: coalesce(p.DOI[0], '') } " \
                            "" % roll_min_node_info("p")
 
-        self._syn_return = "{ label: coalesce(rp.synonym, ''), " \
-                           "scope: coalesce(rp.scope, ''), type: coalesce(rp.cat,'') } "
+        # temp fixes in here for list -> single !
+        self._syn_return = "{ label: coalesce(rp.value[0], ''), " \
+                            "scope: coalesce(rp.scope, ''), " \
+                            "type: coalesce(rp.has_synonym_type[0],'') } "
 
     def def_pubs(self):
         return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
-                                     "[rp:has_reference { typ: 'def'}]->(p:pub) "),
+                                     "[rp:has_reference]->(p:pub) "
+                                     "WHERE rp.typ = 'def' "),  # tmp fix rp.typ shld be []]!
                       WITH="CASE WHEN p is null THEN "
                            "[] ELSE collect(" + self._pub_return
                            + ") END AS def_pubs",
@@ -367,7 +382,7 @@ class QueryLibraryCore:
 
     def pub_syn(self):
         return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
-                                     "[rp:has_reference { typ: 'syn'}]->(p:pub) "),
+                                     "[rp:has_reference]->(p:pub) where rp.typ = 'syn'"),  # tmp fix rp.typ shld be []]!
                       WITH="CASE WHEN p is null THEN [] "
                            "ELSE collect({ pub: %s, synonym: %s }) END AS pub_syn"
                            % (self._pub_return, self._syn_return),
@@ -451,7 +466,8 @@ class QueryLibrary(QueryLibraryCore):
                                       self.relationships(),
                                       self.xrefs(),
                                       self.channel_image(),
-                                      self.related_individuals()],
+                             #         self.related_individuals()
+                                      ],
                              q_name=q_name,
                              pretty_print=pretty_print)  # Is Anatomy label sufficient here
 
@@ -478,7 +494,7 @@ class QueryLibrary(QueryLibraryCore):
                              clauses=[self.term(),
                                       self.parents(),
                                       self.relationships(),
-                                      self.related_individuals(),
+                             #         self.related_individuals(),
                                       self.xrefs(),
                                       self.anatomy_channel_image(),
                                       self.pub_syn(),
@@ -526,10 +542,10 @@ class QueryLibrary(QueryLibraryCore):
     def pub_term_info(self, short_form: list, *args, pretty_print=False,
                            q_name='Get JSON for pub'):
         return_clause_hack = ", {" \
-                             "title: coalesce(primary.title, '') ," \
-                             "PubMed: coalesce(primary.PMID, ''), "  \
-                             "FlyBase: coalesce(primary.FlyBase, ''), " \
-                             "DOI: coalesce(primary.DOI, '') }" \
+                             "title: coalesce(primary.title[0], '') ," \
+                             "PubMed: coalesce(primary.PMID[0], ''), "  \
+                             "FlyBase: coalesce(primary.FlyBase[0], ''), " \
+                             "DOI: coalesce(primary.DOI[0], '') }" \
                              "AS pub_specific_content"
 
         return query_builder(
@@ -617,8 +633,6 @@ class QueryLibrary(QueryLibraryCore):
         aci.__setattr__('pvar', 'anat')
         # Add Synaptic neuropil restriction
         aci.__setattr__('starting_labels', ['Synaptic_neuropil'])
-        # Remove limits on number images returns
-        aci.__setattr__('limit', '')
         # Return relationship on anoni
         rel = self.ep_stage()
         rel.__setattr__('pvar', 'anoni')
@@ -638,7 +652,6 @@ class QueryLibrary(QueryLibraryCore):
         # We can't set limits on numbers of images.
         # For this reason, we may have to remove aci from this
         # query for now.  Maybe add counts instead for now?
-        aci.__setattr__('limit', '')
         pub = self.pubs()
         pub.__setattr__('pvar', 'ds')
         li = self.license()
@@ -647,7 +660,7 @@ class QueryLibrary(QueryLibraryCore):
         counts.__setattr__('pvar', 'ds')
         return query_builder(query_short_forms=[short_form],
                              clauses=[self.template_2_datasets_wrapper(),
-                                      # aci, # commenting as too slow w/o limit
+                                      aci,  # commenting as too slow w/o limit
                                       pub,
                                       li,
                                       counts])
@@ -659,7 +672,6 @@ class QueryLibrary(QueryLibraryCore):
         # We can't set limits on numbers of images.
         # For this reason, we may have to remove aci from this
         # query for now.  Maybe add counts instead for now?
-        aci.__setattr__('limit', '')
         pub = self.pubs()
         pub.__setattr__('pvar', 'ds')
         li = self.license()
@@ -667,7 +679,7 @@ class QueryLibrary(QueryLibraryCore):
         counts = self.dataset_counts()
         counts.__setattr__('pvar', 'ds')
         return query_builder(clauses=[self.all_datasets_wrapper(),
-                                      # aci # commenting as too slow w/o limit
+                                      aci, # commenting as too slow w/o limit
                                       pub,
                                       li,
                                       counts])
@@ -692,9 +704,12 @@ def term_info_export(escape=True):
     ql = QueryLibrary()
     query_methods = ['anatomical_ind_term_info',
                      'class_term_info',
+                     'neuron_class_term_info',
+                     'split_class_term_info',
                      'dataset_term_info',
                      'license_term_info',
-                     'template_term_info']
+                     'template_term_info',
+                     'pub_term_info']
 
     out = {}
     for qm in query_methods:
