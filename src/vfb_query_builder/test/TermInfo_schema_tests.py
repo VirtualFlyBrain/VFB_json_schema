@@ -13,7 +13,7 @@ class TermInfoRollerTest(unittest.TestCase):
     def test_class_term(self):
         query = query_builder(query_labels=["Class"],
                               clauses=[self.ql.term()],
-                              query_short_forms=['FBbt_00007422'])
+                              query_short_forms=['FBbt_00000591'])
         r = self.qw.test(t=self,
                          query=query)
 
@@ -36,7 +36,7 @@ class TermInfoRollerTest(unittest.TestCase):
         query = query_builder(query_labels=["Class"],
                               clauses=[self.ql.term(), 
                                        self.ql.xrefs()],
-                              query_short_forms=['FBti0143498'])
+                              query_short_forms=['VFBexp_FBtp0123937FBtp0120068'])
         r = self.qw.test(t=self,
                          query=query)
 
@@ -92,7 +92,7 @@ class TermInfoRollerTest(unittest.TestCase):
         query = query_builder(query_labels=["Individual"],
                               clauses=[self.ql.term(),
                                        self.ql.xrefs()],
-                              query_short_forms=['VFB_00020249'])
+                              query_short_forms=['VFB_00010249'])
         r = self.qw.test(t=self,
                          query=query)
 
@@ -113,12 +113,12 @@ class TermInfoRollerTest(unittest.TestCase):
                          query=query)
 
     def test_class(self):
-        query = self.ql.class_term_info(short_form=['FBbt_00007422'])
+        query = self.ql.class_term_info(short_form=['FBbt_00047035'])
         r = self.qw.test(t=self,
                          query=query)
 
     def test_individual(self):
-        query = self.ql.anatomical_ind_term_info(short_form=['VFB_00011179'])
+        query = self.ql.anatomical_ind_term_info(short_form=['VFB_jrchjtdq'])
         r = self.qw.test(t=self,
                          query=query)
 

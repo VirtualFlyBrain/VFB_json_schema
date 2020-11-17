@@ -2,11 +2,12 @@
 
 VFB json schema spec + code for rolling queries producing VFB json schema + related integration tests
 
-| PDB | Staging  | Dev  | 
-|-------------------|-------------------|-------------------|
-| [![Build1][1]][6] | [![Build2][2]][6] | [![Build3][3]][6] |
+| PDB | Staging  | Dev  | P2 |
+|-------------------|-------------------|-------------------| --- |
+| [![Build1][1]][6] | [![Build2][2]][6] | [![Build3][3]][6] | [![Build4][4]][6]
 
 [1]: https://travis-matrix-badges.herokuapp.com/repos/VirtualFlyBrain/VFB_json_schema/branches/master/1
 [2]: https://travis-matrix-badges.herokuapp.com/repos/VirtualFlyBrain/VFB_json_schema/branches/master/2
 [3]: https://travis-matrix-badges.herokuapp.com/repos/VirtualFlyBrain/VFB_json_schema/branches/master/3
+[4]: https://travis-matrix-badges.herokuapp.com/repos/VirtualFlyBrain/VFB_json_schema/branches/master/4
 [6]: https://travis-ci.org/VirtualFlyBrain/VFB_json_schema
