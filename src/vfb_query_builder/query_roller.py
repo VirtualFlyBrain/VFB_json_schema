@@ -246,6 +246,28 @@ class QueryLibraryCore:
                                                        % (roll_min_edge_info("r"),
                                                           roll_min_node_info("o"))))
 
+    def related_individuals_neuron_np_output(self): return (Clause(vars=["synapse_counts, object"],
+                                                            node_vars=["o"],
+                                                  MATCH=Template(
+                                                      "MATCH "
+                                                      "(o:Individual)<-[r:has_presynaptic_terminals_in|"
+                                                      "has_post_synaptic_terminal_in]-($pvar"),
+                                                  WITH="DISTINCT collect(properties(r)) + {} as props, o, $vars"
+                                                       "WITH apoc.map.removeKeys(apoc.map.merge(props[0], props[1]),"
+                                                       "['iri', 'short_form', 'Related', 'label', 'type']) "
+                                                       "as synapse_counts, %s as related_individuals, o  "  # d
+                                                       % roll_min_node_info("o")))  # o -> images, parent classes
+
+
+    def related_individuals_neuron_neuron(self): return (Clause(vars=["weight, object"],
+                                                                node_vars=["o"],
+                                                                MATCH=Template(
+                                                      "MATCH "
+                                                      "(o:Individual)<-[r:synapsed_to]-($pvar:neuron)"),
+                                                  WITH="WITH coalesce (r.weight[0]) as weight " # node need to case - not using OPTIONAL 
+                                                       "object: %s as object, o"
+                                                       % roll_min_node_info("o")))  # o -> images, parent classes
+
     def ep_stage(self):
         return Clause(
             MATCH=Template("OPTIONAL MATCH ($pvar$labels)-[r:Related]->(o:FBdv)"),
