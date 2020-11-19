@@ -246,17 +246,18 @@ class QueryLibraryCore:
                                                        % (roll_min_edge_info("r"),
                                                           roll_min_node_info("o"))))
 
-    def related_individuals_neuron_np_output(self): return (Clause(vars=["synapse_counts, object"],
-                                                            node_vars=["o"],
-                                                  MATCH=Template(
-                                                      "MATCH "
-                                                      "(o:Individual)<-[r:has_presynaptic_terminals_in|"
-                                                      "has_post_synaptic_terminal_in]-($pvar"),
-                                                  WITH="DISTINCT collect(properties(r)) + {} as props, o, $vars"
-                                                       "WITH apoc.map.removeKeys(apoc.map.merge(props[0], props[1]),"
-                                                       "['iri', 'short_form', 'Related', 'label', 'type']) "
-                                                       "as synapse_counts, %s as related_individuals, o  "  # d
-                                                       % roll_min_node_info("o")))  # o -> images, parent classes
+    def related_individuals_neuron_region(self):
+        return (Clause(vars=["synapse_counts"],
+                       node_vars=["target"],
+                       MATCH=Template(
+                           "MATCH "
+                           "(target:Individual)<-[r:has_presynaptic_terminals_in|"
+                           "has_post_synaptic_terminal_in]-($pvar) "
+                           "WITH DISTINCT collect(properties(r)) + {} as props, target, $v "),
+                       WITH="apoc.map.removeKeys(apoc.map.merge(props[0], props[1]),"
+                             "['iri', 'short_form', 'Related', 'label', 'type']) "
+                             "as synapse_counts, %s as related_individuals, target  "
+                             "" % roll_min_node_info("target")))  # o -> images, parent classes
 
 
     def related_individuals_neuron_neuron(self): return (Clause(vars=["weight, object"],
@@ -666,6 +667,28 @@ class QueryLibrary(QueryLibraryCore):
                                       aci],
                              q_name='Get JSON for ep_2_anat query',
                              pretty_print=pretty_print)
+
+    def neuron_region_connectivity_query(self, short_form):
+        aci = self.channel_image()
+        aci.__setattr__('pvar', 'target')
+        parents = self.parents()
+        parents.__setattr__('pvar', 'target')
+        return query_builder(query_short_forms=[short_form],
+                             clauses=[self.term(),  # Not needed?
+                                      self.related_individuals_neuron_region(),
+                                      parents,
+                                      aci])
+
+    def neuron_neuron_connectivity_query(self, short_form):
+        aci = self.anatomy_channel_image()
+        aci.__setattr__('pvar', 'o')
+        parents = self.parents()
+        parents.__setattr__('pvar', 'o')
+        return query_builder(query_short_forms=[short_form],
+                             clauses=[self.term(),  # Not needed?
+                                      self.related_individuals_neuron_neuron(),
+                                      parents,
+                                      aci])
 
     def template_2_datasets_query(self, short_form):
         aci = self.anatomy_channel_image()
