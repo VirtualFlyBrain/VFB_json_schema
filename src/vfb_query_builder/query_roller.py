@@ -325,8 +325,8 @@ class QueryLibraryCore:
         return Clause(
             MATCH=Template("OPTIONAL MATCH ($pvar)-[:INSTANCEOF]->(typ:Class) "),
             WITH="CASE WHEN typ is null THEN [] "
-                 "ELSE collect (%s) END AS types" % roll_min_node_info('typ'),
-        vars=["types"])
+                 "ELSE collect (%s) END AS parents" % roll_min_node_info('typ'),
+            vars=["parents"])
 
     def anatomy_channel_image(self):
 

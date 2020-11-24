@@ -12,6 +12,38 @@
     "dataset": {
       "$ref": "mod.json#definitions/minimal_entity_info"
     },
+    "synapse_counts": {
+      "additionalProperties": false,
+      "properties": {
+        "downstream": {
+          "description": "The number of post synaptic densities downstream of a individual neuron in some specific region",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "Tbars": {
+          "description": "The number of T-bars and individual neuron has in some specific region",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "upstream": {
+          "description": "The number of post synaptic densities and individual neuron has in some specific region",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "weight": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
     "dataset_counts":  {
       "$ref": "mod.json#definitions/dataset_counts"
     },
@@ -55,7 +87,7 @@
       "type": "string",
       "description": "A descriptive name for the query used to generate this JSON."
     },
-    "types": {
+    "parents": {
       "type": "array",
       "items": {
         "$ref": "mod.json#definitions/minimal_entity_info"
