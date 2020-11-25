@@ -767,3 +767,42 @@ def term_info_export(escape=True):
         else:
             out[q_name] = q
     return json.dumps(out)
+
+
+def results_query_single_input_export(escape=True):
+    # Generate a JSON with TermInto queries
+    ql = QueryLibrary()
+    query_methods = ['ep_2_anat_query',
+                     'template_2_datasets_query',
+                     'neuron_region_connectivity_query']
+
+    out = {}
+    for qm in query_methods:
+        # This whole approach feels a bit hacky...
+        qf = getattr(ql, qm)
+        q_name = qm
+        q = qf(short_form=['$ID'])
+        if escape:
+            out[q_name] = saxutils.escape(q)
+        else:
+            out[q_name] = q
+    return json.dumps(out)
+
+def results_query_multi_input_export(escape=True):
+    # Generate a JSON with TermInto queries
+    ql = QueryLibrary()
+    query_methods = ['anat_2_ep_query',
+                     'anat_image_query',
+                     'anat_query']
+
+    out = {}
+    for qm in query_methods:
+        # This whole approach feels a bit hacky...
+        qf = getattr(ql, qm)
+        q_name = qm
+        q = qf(short_forms=['$ID'])
+        if escape:
+            out[q_name] = saxutils.escape(q)
+        else:
+            out[q_name] = q
+    return json.dumps(out)
