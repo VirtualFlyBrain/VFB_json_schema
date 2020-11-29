@@ -198,7 +198,7 @@ class QueryLibraryCore:
     # EXPRESSION QUERIES
 
     def xrefs(self):
-        match_self_xref = "OPTIONAL MATCH (s:Site { short_form: primary.self_xref }) "
+        match_self_xref = "OPTIONAL MATCH (s:Site { short_form: apoc.convert.toList(primary.self_xref)[0] }) "
         match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:database_cross_reference]-($pvar$labels) "
 
         xr = "CASE WHEN s IS NULL THEN %s ELSE COLLECT" \
