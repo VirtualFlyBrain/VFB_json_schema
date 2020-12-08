@@ -247,7 +247,7 @@ class QueryLibraryCore:
                                                           roll_min_node_info("o"))))
 
     def related_individuals_neuron_region(self):
-        return (Clause(vars=["synapse_counts"],
+        return (Clause(vars=["synapse_counts, object"],
                        node_vars=["target"],
                        MATCH=Template(
                            "MATCH "
@@ -256,7 +256,7 @@ class QueryLibraryCore:
                            "WITH DISTINCT collect(properties(r)) + {} as props, target, $v "),
                        WITH="apoc.map.removeKeys(apoc.map.merge(props[0], props[1]),"
                              "['iri', 'short_form', 'Related', 'label', 'type']) "
-                             "as synapse_counts, %s as related_individuals, target  "
+                             "as synapse_counts, %s as object, target  "
                              "" % roll_min_node_info("target")))  # o -> images, parent classes
 
 
