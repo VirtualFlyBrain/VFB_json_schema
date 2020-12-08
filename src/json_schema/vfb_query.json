@@ -88,10 +88,15 @@
       "description": "A descriptive name for the query used to generate this JSON."
     },
     "parents": {
+      "description": "A list of parent classes of a class or individual.",
       "type": "array",
       "items": {
         "$ref": "mod.json#definitions/minimal_entity_info"
       }
+    },
+    "object": {
+      "description": "The object of some relationship query.",
+      "$ref": "mod.json#definitions/minimal_entity_info"
     },
     "term": {
       "$ref": "mod.json#definitions/term"

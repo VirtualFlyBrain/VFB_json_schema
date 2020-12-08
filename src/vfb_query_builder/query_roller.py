@@ -260,14 +260,15 @@ class QueryLibraryCore:
                              "" % roll_min_node_info("target")))  # o -> images, parent classes
 
 
-    def related_individuals_neuron_neuron(self): return (Clause(vars=["weight, object"],
-                                                                node_vars=["o"],
+    def related_individuals_neuron_neuron(self): return (Clause(vars=["synapse_counts, object"],
+                                                                node_vars=["oi"],
                                                                 MATCH=Template(
                                                       "MATCH "
-                                                      "(o:Individual)<-[r:synapsed_to]-($pvar:neuron)"),
-                                                  WITH="WITH coalesce (r.weight[0]) as weight " # node need to case - not using OPTIONAL 
-                                                       "object: %s as object, o"
-                                                       % roll_min_node_info("o")))  # o -> images, parent classes
+                                                      "(oi:Individual)<-[r:synapsed_to]-($pvar:Individual) "
+                                                      "WHERE exists(r.weight) AND r.weight[0] > 1"),
+                                                  WITH="{ weight: [r.weight[0]] } as synapse_counts,  " # node need to case - not using OPTIONAL 
+                                                       "%s as object, oi"
+                                                       % roll_min_node_info("oi")))  # o -> images, parent classes
 
     def ep_stage(self):
         return Clause(
@@ -680,15 +681,15 @@ class QueryLibrary(QueryLibraryCore):
                                       aci])
 
     def neuron_neuron_connectivity_query(self, short_form):
-        aci = self.anatomy_channel_image()
-        aci.__setattr__('pvar', 'o')
+        ci = self.channel_image()
+        ci.__setattr__('pvar', 'oi')
         parents = self.parents()
-        parents.__setattr__('pvar', 'o')
+        parents.__setattr__('pvar', 'oi')
         return query_builder(query_short_forms=[short_form],
                              clauses=[self.term(),  # Not needed?
                                       self.related_individuals_neuron_neuron(),
                                       parents,
-                                      aci])
+                                      ci])
 
     def template_2_datasets_query(self, short_form):
         aci = self.anatomy_channel_image()

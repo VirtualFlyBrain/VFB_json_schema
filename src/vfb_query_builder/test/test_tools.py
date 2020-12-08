@@ -21,7 +21,7 @@ class TestWrapper:
                                base_uri=base)
         self.nc = Neo4jConnect('http://pdb.p2.virtualflybrain.org', 'neo4j', 'neo4j')
 
-    def test_content(self, t, d, hard_fail = False):
+    def test_content(self, t, d, hard_fail=False):
         # test if dict?
         if type(d) == dict:
             for k,v in d.items():

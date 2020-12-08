@@ -56,6 +56,12 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query, single=False)
 
+    def test_neuron_neuron_connectivity_query(self):
+        query = self.ql.neuron_neuron_connectivity_query('VFB_jrchjtdr')
+        print("Testing and printing first result in list only.")
+        r = self.qw.test(t=self,
+                         query=query, single=False)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
