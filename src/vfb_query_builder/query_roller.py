@@ -263,12 +263,16 @@ class QueryLibraryCore:
     def related_individuals_neuron_neuron(self): return (Clause(vars=["synapse_counts, object"],
                                                                 node_vars=["oi"],
                                                                 MATCH=Template(
-                                                      "MATCH "
-                                                      "(oi:Individual)<-[r:synapsed_to]-($pvar:Individual) "
-                                                      "WHERE exists(r.weight) AND r.weight[0] > 1"),
-                                                  WITH="{ weight: [r.weight[0]] } as synapse_counts,  " # node need to case - not using OPTIONAL 
+                                                      "MATCH (oi:Individual)-[r:synapsed_to]-(primary:Individual) "
+                                                      "WHERE exists(r.weight) AND r.weight[0] > 1 "
+                                                      "WITH $v, oi "
+                                                      "OPTIONAL MATCH (oi)<-[down:synapsed_to]-(primary) "
+                                                      "WITH down, oi, $v "
+                                                      "OPTIONAL MATCH (primary)<-[up:synapsed_to]-(oi) "),
+                                                  WITH="{ downstream: [coalesce(down.weight[0],0)], "
+                                                       "upstream:[coalesce(up.weight[0],0)] } as synapse_counts, "
                                                        "%s as object, oi"
-                                                       % roll_min_node_info("oi")))  # o -> images, parent classes
+                                                       % roll_min_node_info("oi")))  # oi -> images, parent classes
 
     def ep_stage(self):
         return Clause(
