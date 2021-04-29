@@ -1,6 +1,6 @@
 # VFB_json_schema [![Build Status](https://travis-ci.org/VirtualFlyBrain/VFB_json_schema.svg?branch=master)](https://travis-ci.org/VirtualFlyBrain/VFB_json_schema)
 
-VFB [json schema spec](https://virtualflybrain.github.io/VFB_json_schema/doc/schema_doc.html#anatomy_channel_image) + code for rolling queries producing VFB json schema + related integration tests
+VFB [json schema spec](https://virtualflybrain.github.io/VFB_json_schema/doc/schema_doc.html#term) + code for rolling queries producing VFB json schema + related integration tests
 
 | PDB | Staging  | Dev  | P2 |
 |-------------------|-------------------|-------------------| --- |
