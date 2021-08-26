@@ -103,5 +103,19 @@ class TermInfoRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
+    def test_individual_dataset_license(self):
+        query = query_builder(query_labels=["Individual"],
+                              clauses=[self.ql.term(),
+                                       self.ql.dataSet_license()],
+                              query_short_forms=['VFB_00011179'])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_class(self):
+        query = self.ql.class_term_info(short_form=['FBbt_00047035'])
+        r = self.qw.test(t=self,
+                         query=query)
+
     def test_convert(self):
         self.ql.test_func()
+

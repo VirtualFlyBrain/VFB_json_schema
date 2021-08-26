@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import List
 from pypher import Pypher, Param, __, create_function, create_statement
 import subprocess
-
+import re
 
 empty_str = Param('empty_str', "''")
 first_index = Param('first_index', 0)
@@ -76,14 +76,15 @@ def query_builder(clauses: List[Clause], query_short_forms=None,
 
     if annotate:
         if q_name:
-            return_clauses.append(__().raw(q_name).AS(__.query))
+            return_clauses.append(__().raw("'"+q_name+"'").AS(__.query))
         return_clauses.append(__().raw("'" + str(get_version_tag()) + "'").AS(__.version))
-    return_clauses.append(__().raw(','.join(data_vars)))
+    if data_vars:
+        return_clauses.append(__().raw(','.join(data_vars)))
 
     return_clause_count = 0
     for return_clause in return_clauses:
         q.append(return_clause)
-        if 0 < return_clause_count < len(return_clauses)-1:
+        if 0 < return_clause_count < len(return_clauses) - 1:
             q.append(__().raw(","))
         return_clause_count += 1
 
@@ -97,13 +98,14 @@ class QueryLibraryCore:
         self._set_image_query_common_elements()
         self._set_pub_common_query_elements()
 
-    def term(self):
+    def term(self, return_extensions=None):
         return Clause(
             MATCH=__.MATCH.node('primary', labels='$labels')
-                    .WHERE.primary.property('short_form').operator('in', Param('ssf', str(''))),
+                .WHERE.primary.property('short_form').operator('in', Param('ssf', str(''))),
             WITH=__.primary,
             node_vars=['primary'],
             RETURN=roll_node_map(
+                base_map=return_extensions,
                 typ='extended_core',
                 var='primary').append(__.alias(__.term))
         )
@@ -112,8 +114,9 @@ class QueryLibraryCore:
 
     def xrefs(self):
         match_self_xref = __.OptionalMatch.node("s", "Site", short_form=
-                            __().func("apoc.convert.toList", __.primary.property("self_xref"))[first_index])
-        match_ext_xref = __.OptionalMatch.node("s", "Site").rel_in("dbx", "database_cross_reference").node("$pvar", "$labels")
+        __().func("apoc.convert.toList", __.primary.property("self_xref"))[first_index])
+        match_ext_xref = __.OptionalMatch.node("s", "Site").rel_in("dbx", "database_cross_reference").node("$pvar",
+                                                                                                           "$labels")
 
         xr = __.CASE.WHEN.s.IS_NULL.THEN(Param("param1", "param1")).ELSE.COLLECT(__.map(
             link_base=__.coalesce(__.s.property('link_base')[first_index], empty_str),
@@ -123,7 +126,7 @@ class QueryLibraryCore:
             site=__().bind_param("site_param", "site_param"),
             icon=__.coalesce(__.s.property('link_icon_url')[first_index], empty_str),
             link_postfix=__.coalesce(__.s.property("link_postfix"), empty_str)
-            ))  # Should be $pvar$labels not primary, but need sub on WITH!
+        ))  # Should be $pvar$labels not primary, but need sub on WITH!
         xrs = __.END.AS(__.self_xref).raw(", $v")  # Passing vars
         xrx = __().raw("+").self_xref.END.AS(__.xrefs)
 
@@ -132,19 +135,19 @@ class QueryLibraryCore:
             WITH=xr.clone().append(xrx),
             vars=["xrefs"],
             match_params={"param1": "[]",
-                         "accession_param": "primary.short_form",
-                         "site_param": roll_min_node_info("s"),
-                         },
+                          "accession_param": "primary.short_form",
+                          "site_param": roll_min_node_info("s"),
+                          },
             with_params={"param1": "self_xref",
                          "accession_param": "dbx.accession[0]",
                          "site_param": roll_min_node_info("s"),
                          }
-            )
+        )
 
     # RELATIONSHIPS
 
     def parents(self): return Clause(vars=["parents"],
-                                     MATCH=__.OptionalMatch.node("o", "Class").rel_in("r", "SUBCLASSOF|INSTANCEOF")
+                                     MATCH=__.OptionalMatch.node("o", "Class").rel_in("r", ["SUBCLASSOF", "INSTANCEOF"])
                                      .node("$pvar", "$labels"),
                                      WITH=__.CASE.WHEN.o.IS_NULL.THEN([])
                                      .ELSE.COLLECT(__().raw(roll_min_node_info("o"))).END.AS("parents")
@@ -154,10 +157,10 @@ class QueryLibraryCore:
                                             MATCH=__.OptionalMatch.node("o", "Class")
                                             .rel_in("r", "", type=__().raw("'Related'")).node("$pvar", "$labels"),
                                             WITH=__.CASE.WHEN.o.IS_NULL.THEN([])
-                                                .ELSE.COLLECT(__.map(
-                                                    relation=Param("info_r_param", "info_r_param"),
-                                                    object=Param("info_o_param", "info_o_param")
-                                                )).END.AS(__().raw("relationships")),
+                                            .ELSE.COLLECT(__.map(
+                                                relation=Param("info_r_param", "info_r_param"),
+                                                object=Param("info_o_param", "info_o_param")
+                                            )).END.AS(__().raw("relationships")),
                                             with_params={"info_r_param": roll_min_edge_info("r"),
                                                          "info_o_param": roll_min_node_info("o")
                                                          }
@@ -165,24 +168,38 @@ class QueryLibraryCore:
 
     def test_func(self):
         q = Pypher()
-        q + __.self_xref.END.AS(__.xrefs)
-        print(__().raw("") + __.self_xref.END.AS(__.xrefs))
+        my_dict = {"key1": "val1", "key2": "val2"}
+        # q.WHERE.raw(my_dict).AS(__.some)
+        map1 = q.map(
+            key1="val1",
+            key2="val2"
+        )
+
+        map2 = __.map(
+            key3="val3",
+            key4="val4"
+        )
+
+        merged = merge_maps(map1, map2)
+        print(merged)
 
     def anatomy_channel_image(self):
         return Clause(
             MATCH=__.CALL.func("apoc.cypher.run", __().raw("'")
-                                .WITH(Param("$pvar", ""))
-                                .OptionalMatch.node("$pvar", "$labels").rel_in("", "has_source|SUBCLASSOF|INSTANCEOF*")
-                                .node("i", "Individual")
-                                .rel_in("", "depicts").node("channel", "Individual").rel_out("irw", "in_register_with")
-                                .node("template", "Individual").rel_out("", "depicts").node("template_anat", "Individual")
-                                .RETURN(__.template, __.channel, __.template_anat, __.i, __.irw)
-                                .Limit(5)
-                                .raw("'"), __.map("$pvar:$pvar"))
-            .YIELD(__.value.WITH.value.property("template").AS(__.template), __.value.property("channel").AS(__.channel),
-                   __.value.property("template_anat").AS(__.template_anat), __.value.property("i").AS(__.i),
-                   __.value.property("irw").AS(__.irw), Param("$v", ""))
-            .OptionalMatch.node("channel").rel_out(labels="is_specified_output_of").node("technique", "Class"),
+                               .WITH(Param("$pvar", ""))
+                               .OptionalMatch.node("$pvar", "$labels").rel_in("", "has_source|SUBCLASSOF|INSTANCEOF*")
+                               .node("i", "Individual")
+                               .rel_in("", "depicts").node("channel", "Individual").rel_out("irw", "in_register_with")
+                               .node("template", "Individual").rel_out("", "depicts").node("template_anat",
+                                                                                           "Individual")
+                               .RETURN(__.template, __.channel, __.template_anat, __.i, __.irw)
+                               .Limit(5)
+                               .raw("'"), __.map("$pvar:$pvar"))
+                .YIELD(__.value.WITH.value.property("template").AS(__.template),
+                       __.value.property("channel").AS(__.channel),
+                       __.value.property("template_anat").AS(__.template_anat), __.value.property("i").AS(__.i),
+                       __.value.property("irw").AS(__.irw), Param("$v", ""))
+                .OptionalMatch.node("channel").rel_out(labels="is_specified_output_of").node("technique", "Class"),
             WITH=__.CASE.WHEN.channel.IS_NULL.THEN([])
                 .ELSE.COLLECT(__.map(anatomy=roll_min_node_info("i"), channel_image=self._channel_image_return))
                 .END.AS(__.anatomy_channel_image),
@@ -192,9 +209,10 @@ class QueryLibraryCore:
 
     def _set_image_query_common_elements(self):
         # TODO check $v %s $limit
-        self._channel_image_match = __().rel_in(labels="depicts").node("channel", "Individual").rel_out("irw", "in_register_with")\
-            .node("template", "Individual").rel_out(labels="depicts").node("template_anat", "Individual")\
-            .WITH(__.template, __.channel, __.template_anat, __.irw, __().raw("$v $param1 $limit"))\
+        self._channel_image_match = __().rel_in(labels="depicts").node("channel", "Individual").rel_out("irw",
+                                                                                                        "in_register_with") \
+            .node("template", "Individual").rel_out(labels="depicts").node("template_anat", "Individual") \
+            .WITH(__.template, __.channel, __.template_anat, __.irw, __().raw("$v $param1 $limit")) \
             .OptionalMatch.node("channel").rel_out(labels="is_specified_output_of").node("technique", "Class")
         self._channel_image_return = __.map(
             channel=roll_min_node_info('channel'),
@@ -212,9 +230,41 @@ class QueryLibraryCore:
         return Clause(
             MATCH=__.OptionalMatch.node("$pvar", "$labels").append(self._channel_image_match.clone()),
             WITH=__.CASE.WHEN.channel.IS_NULL.THEN([])
-                    .ELSE.COLLECT(self._channel_image_return.clone()).END.AS(__.channel_image),
+                .ELSE.COLLECT(self._channel_image_return.clone()).END.AS(__.channel_image),
             match_params={"param1": ""},
             vars=["channel_image"])
+
+    def template_domain(self):  return Clause(
+        MATCH=__.OptionalMatch.node("technique", "Class").rel_in(labels="is_specified_output_of")
+            .node("channel", "Individual").rel_out("irw", "in_register_with").node("template", "Individual")
+            .rel_out(labels="depicts").node("$pvar", "$labels")
+            .WHERE(__.technique.property('short_form') == "'FBbi_00000224'").AND.exists(__.irw.property("index"))
+            .WITH(__().raw("$v"), __.COLLECT(__.map(channel=__.channel, irw=__.irw))).AS(__.painted_domains)
+            .Unwind(__.painted_domains).AS(__.pd)
+            .MATCH.node("channel", "Individual", short_form=__.pd.property("channel").property("short_form"))
+            .rel(labels="depicts").node("ai", "Individual").rel_out(labels="INSTANCEOF").node("c", "Class"),
+        WITH=__.COLLECT(__.map(
+                anatomical_type=roll_min_node_info("c"),
+                anatomical_individual=roll_min_node_info("ai"),
+                folder=__.pd.property("irw").property("folder")[first_index],
+                center=__.coalesce(__.pd.property('irw').property('center'), __.List()),
+                index=__.List().raw(" + ").coalesce(__.pd.property('irw').property('index'), __.List()),
+            )).AS(__.template_domains),
+        vars=["template_domains"])
+
+    def template_channel(self):  return Clause(
+        MATCH=__.MATCH.node("channel", "Individual").rel_in("irw", "in_register_with").node("channel", "Individual")
+                .rel_out(labels="depicts").node("$pvar", "$labels"),
+        WITH=__.map(
+            index=__.coalesce(__().func("apoc.convert.toInteger", __.irw.property('index')[first_index]), __.List()) + __.List(),
+            extent=__.irw.property('extent')[first_index],
+            center=__.irw.property('center')[first_index],
+            voxel=__.irw.property('voxel')[first_index],
+            orientation=__.coalesce(__.irw.property('orientation')[first_index], empty_str),
+            image_folder=__.coalesce(__.irw.property('folder')[first_index], empty_str),
+            channel=roll_min_node_info("channel")
+        ).AS(__.template_channel),
+        vars=["template_channel"])
 
     ## PUBS
 
@@ -230,55 +280,116 @@ class QueryLibraryCore:
         # temp fixes in here for list -> single !
         self._syn_return = __.map(
             label=__.coalesce(__.rp.property('value')[first_index], empty_str),
-            scope=__.coalesce(__.rp.property('scope')[first_index], empty_str),
+            scope=__.coalesce(__.rp.property('scope'), empty_str),
             type=__.coalesce(__.rp.property('has_synonym_type')[first_index], empty_str),
         )
 
     def def_pubs(self):
         return Clause(
             MATCH=__.OptionalMatch.node("$pvar", "$labels").rel_out("rp", "has_reference").node("p", "pub")
-                    .WHERE.rp.property("typ") == __().raw("'def'"),
+                      .WHERE.rp.property("typ") == __().raw("'def'"),
             WITH=__.CASE.WHEN.p.IS_NULL.THEN([])
-                    .ELSE.COLLECT(__().raw(self._pub_return)).END.AS(__.def_pubs),
+                      .ELSE.COLLECT(__().raw(self._pub_return)).END.AS(__.def_pubs),
             vars=['def_pubs'])
 
     def pub_syn(self):
         return Clause(
             MATCH=__.OptionalMatch.node("$pvar", "$labels").rel_out("rp", "has_reference").node("p", "pub")
-                    .WHERE.rp.property("typ") == __().raw("'syn'"),  # tmp fix rp.typ shld be []]!
+                      .WHERE.rp.property("typ") == __().raw("'syn'"),  # tmp fix rp.typ shld be []]!
             WITH=__.CASE.WHEN.p.IS_NULL.THEN([])
-                    .ELSE.COLLECT(__.map(
-                            pub=self._pub_return,
-                            synonym=self._syn_return
-                    )).END.AS(__.pub_syn),
+                      .ELSE.COLLECT(__.map(
+                        pub=self._pub_return,
+                        synonym=self._syn_return
+            )).END.AS(__.pub_syn),
             vars=['pub_syn'])
 
+    def pubs(self):
+        return Clause(
+            MATCH=__.OptionalMatch.node("$pvar", "$labels").rel_out("rp", "has_reference").node("p", "pub"),
+            WITH=__.CASE.WHEN.p.IS_NULL.THEN([])
+                .ELSE.COLLECT(self._pub_return).END.AS(__.pubs),
+            vars=['pubs'])
 
-class QueryLibrary(QueryLibraryCore):
-    pass
+    def neuron_split(self):
+        return Clause(
+            MATCH=__.OptionalMatch.node(labels="Class", label='intersectional expression pattern')
+                .rel_in(labels="SUBCLASSOF").node("ep", "Class").rel_in("ar", "part_of").node("anoni", "Individual")
+                .rel_out(labels="INSTANCEOF").node("$pvar"),
+            WITH=__.CASE.WHEN.ep.IS_NULL.THEN([])
+                .ELSE.COLLECT(roll_min_node_info("ep")).END.AS(__.targeting_splits),
+            vars=['targeting_splits'])
+
+    def split_neuron(self):
+        return Clause(
+            MATCH=__.OptionalMatch.node(labels="Class", label='intersectional expression pattern')
+                .rel_in(labels="SUBCLASSOF").node("$pvar").rel_in("ar", "part_of").node("anoni", "Individual")
+                .rel_out(labels="INSTANCEOF").node("n", "Neuron"),
+            WITH=__.CASE.WHEN.n.IS_NULL.THEN([])
+                .ELSE.COLLECT(roll_min_node_info("n")).END.AS(__.target_neurons),
+            vars=['target_neurons'])
+
+    def dataSet_license(self, prel='has_source'):
+        return Clause(
+            MATCH=__.OptionalMatch.node("$pvar", "$labels").rel(labels="$prel")
+                .node("ds", "DataSet").rel_out("", ["has_license", "license"]).node("l", "License"),
+            WITH=__.COLLECT(__.map(
+                dataset=roll_node_map(var='ds',
+                                      base_map=roll_dataset_return_dict('ds'),
+                                      typ='core'),
+                license=roll_node_map(var='l',
+                                      base_map=roll_license_return_dict('l'),
+                                      typ='core')
+            )).AS(__.dataset_license),
+            vars=['dataset_license'],
+            prel=prel)
+
+    def license(self):
+        return Clause(
+            MATCH=__.OptionalMatch.node("$pvar", "$labels").rel_out(labels=["has_license", "license"])
+                .node("l", "License"),
+            WITH=__.COLLECT(roll_node_map(var='l',
+                                          base_map=roll_license_return_dict('l'),
+                                          typ='core')
+                            ).AS(__.license),
+            vars=['license'])
+
+    def dataset_counts(self):
+        return Clause(
+            MATCH=__.OptionalMatch.node("$pvar").rel_in(labels="has_source").node("i", "Individual")
+                .WITH(__.i, __().raw("$v")).OptionalMatch.node("i").rel(labels="INSTANCEOF").node("c", "Class"),
+            WITH=__.Distinct.map(images=__.count(__.Distinct.i),
+                                 types=__.count(__.Distinct.c)).AS(__.dataset_counts),
+            vars=['dataset_counts']
+        )
 
 
-def inplace_bound_params(cypher, params):
-    """
-    Embeds bound query param values in the query string.
+def roll_license_return_dict(var):
+    return __.map(
+        icon=__.coalesce(__().raw(var).property('license_logo')[first_index], empty_str),
+        link=__.coalesce(__().raw(var).property('license_url')[first_index], empty_str)
+    )
 
-    Return: updated query string
-    """
-    for param in params:
-        cypher = cypher.replace("$" + param, str(params[param]))
-    return cypher
+
+# We sometimes need to extend return from term with additional info from other clauses
+# For this it helps to contruct return as a dict
+
+
+def roll_dataset_return_dict(var, typ=''):
+    return __.map(
+        link=__.coalesce(__().raw(var).property('dataset_link')[first_index], empty_str)
+    )
 
 
 def roll_min_node_info(var):
     """Rolls core JSON (specifying minimal info about an entity.
     var: the variable name for the entity within this cypher clause."""
     return __.map(
-                    short_form=__().raw(var).property('short_form'),
-                    label=__.coalesce(__().raw(var).property('label'), empty_str),
-                    iri=__().raw(var).property('iri'),
-                    types=__.labels(__().raw(var)),
-                    symbol=__.coalesce(__().raw(var).property('symbol')[first_index], empty_str)
-                )
+        short_form=__().raw(var).property('short_form'),
+        label=__.coalesce(__().raw(var).property('label'), empty_str),
+        iri=__().raw(var).property('iri'),
+        types=__.labels(__().raw(var)),
+        symbol=__.coalesce(__().raw(var).property('symbol')[first_index], empty_str)
+    )
 
 
 def roll_min_edge_info(var):
@@ -291,7 +402,7 @@ def roll_min_edge_info(var):
     )
 
 
-def roll_node_map(var: str, typ=''):
+def roll_node_map(var: str, base_map=None, typ=''):
     node_map = None
     if typ:
         if typ == 'core':
@@ -306,4 +417,168 @@ def roll_node_map(var: str, typ=''):
             )
         else:
             raise Exception('Unknown type: %s should be one or core, extended_core' % typ)
-    return node_map
+
+    return merge_maps(base_map, node_map)
+
+
+class QueryLibrary(QueryLibraryCore):
+
+    # Class wrapping TermInfo queries & queries -> results tables.
+
+    ## TermInfo
+
+    def anatomical_ind_term_info(self, short_form: list,
+                                 *args,
+                                 pretty_print=False,
+                                 q_name='Get JSON for Individual:Anatomy'):
+        return query_builder(query_labels=['Individual', 'Anatomy'],
+                             query_short_forms=short_form,
+                             clauses=[self.term(),
+                                      self.dataSet_license(),
+                                      self.parents(),
+                                      self.relationships(),
+                                      self.xrefs(),
+                                      self.channel_image(),
+                                      #         self.related_individuals()
+                                      ],
+                             q_name=q_name,
+                             pretty_print=pretty_print)  # Is Anatomy label sufficient here
+
+    def license_term_info(self, short_form: list,
+                          *args,
+                          pretty_print=False,
+                          q_name='Get JSON for License'):
+        return query_builder(query_labels=['License'],
+                             query_short_forms=short_form,
+                             clauses=[self.term(
+                                 return_extensions=roll_license_return_dict('primary'))],
+                             q_name=q_name,
+                             pretty_print=pretty_print)
+
+    def class_term_info(self, short_form,
+                        *args,
+                        pretty_print=False,
+                        q_name='Get JSON for Class',
+                        additional_clauses=None):
+        if additional_clauses is None:
+            additional_clauses = []
+        return query_builder(query_labels=['Class'],
+                             query_short_forms=short_form,
+                             clauses=[self.term(),
+                                      self.parents(),
+                                      self.relationships(),
+                                      #         self.related_individuals(),
+                                      self.xrefs(),
+                                      self.anatomy_channel_image(),
+                                      self.pub_syn(),
+                                      self.def_pubs()] + additional_clauses,
+                             q_name=q_name,
+                             pretty_print=pretty_print)
+
+    def neuron_class_term_info(self, short_form,
+                               *args,
+                               pretty_print=False,
+                               q_name="Get JSON for Neuron Class"):
+        return self.class_term_info(short_form, *args,
+                                    q_name=q_name,
+                                    pretty_print=pretty_print,
+                                    additional_clauses=[self.neuron_split()])
+
+    def split_class_term_info(self, short_form,
+                              *args,
+                              pretty_print=False,
+                              q_name="Get JSON for Split Class"):
+        return self.class_term_info(short_form, *args,
+                                    q_name=q_name,
+                                    pretty_print=pretty_print,
+                                    additional_clauses=[self.split_neuron()])
+
+    def dataset_term_info(self, short_form: list, *args, pretty_print=False,
+                          q_name='Get JSON for DataSet'):
+        return query_builder(query_labels=['DataSet'],
+                             query_short_forms=short_form,
+                             clauses=[self.term(
+                                 return_extensions=
+                                 roll_dataset_return_dict(
+                                     'primary',
+                                     typ='core')),
+                                 self.anatomy_channel_image(),
+                                 self.xrefs(),
+                                 self.license(),
+                                 self.pubs(),
+                                 self.dataset_counts()
+                             ],
+                             q_name=q_name,
+                             pretty_print=pretty_print)
+
+    def pub_term_info(self, short_form: list, *args, pretty_print=False,
+                      q_name='Get JSON for pub'):
+        return_clause_hack = __().raw(", ").map(
+            title=__.coalesce(__.primary.property('title')[first_index], empty_str),
+            PubMed=__.coalesce(__.primary.property('PMID')[first_index], empty_str),
+            FlyBase=__.coalesce(__.primary.property('FlyBase')[first_index], empty_str),
+            DOI=__.coalesce(__.primary.property('DOI')[first_index], empty_str)
+        ).AS(__.pub_specific_content)
+
+        return query_builder(
+            query_short_forms=short_form,
+            query_labels=['Individual', 'pub'],
+            clauses=[self.term(),
+                     self.dataSet_license(prel='has_reference')]
+        ).append(return_clause_hack)
+
+    def template_term_info(self, short_form: list, *args, pretty_print=False,
+                           q_name='Get JSON for Template'):
+        return query_builder(query_labels=['Template'],
+                             query_short_forms=short_form,
+                             clauses=[self.term(),
+                                      self.template_channel(),
+                                      self.template_domain(),
+                                      self.dataSet_license(),
+                                      self.parents(),
+                                      self.relationships(),
+                                      self.xrefs(),
+                                      self.related_individuals()
+                                      ],
+                             q_name=q_name,
+                             pretty_print=pretty_print)
+
+
+def inplace_bound_params(cypher, params):
+    """
+    Embeds bound query param values in the query string.
+
+    Return: updated query string
+    """
+    for param in params:
+        if param == "labels" and not params[param]:
+            cypher = handle_empty_labels(cypher)
+        cypher = cypher.replace("$" + param, str(params[param]))
+    return cypher
+
+
+def handle_empty_labels(cypher):
+    """
+    When labels are empty, Pypher generates a faulty definition like "(node_name:'')".
+    This function removes ":''" strings to fix this problem and conclude with "(node_name)".
+    """
+    all_label_indexes = [m.start() for m in re.finditer('\$labels', cypher)]
+    for label_index in all_label_indexes:
+        semicolon_index = cypher.find(":", label_index - 2, label_index)
+        if semicolon_index >= 0:
+            cypher = cypher[:semicolon_index] + cypher[label_index + len("$labels") + 1:]
+    return cypher
+
+
+def merge_maps(map1, map2):
+    """
+    Pypher does not have a map merge or dynamic map generation function.
+    So merging given maps with string operations.
+    """
+    if not map1:
+        return map2
+    if not map2:
+        return map1
+    map1_str = inplace_bound_params(str(map1), map1.bound_params)
+    map2_str = inplace_bound_params(str(map2), map2.bound_params)
+    return __().raw(map1_str[0:map1_str.rfind("}")] + ", " + map2_str[map2_str.find("{") + 1:len(map2_str)])
