@@ -116,6 +116,99 @@ class TermInfoRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
-    def test_convert(self):
-        self.ql.test_func()
+    def test_individual(self):
+        query = self.ql.anatomical_ind_term_info(short_form=['VFB_jrchjtdq'])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_dataset_license(self):
+        query = query_builder(query_labels=['DataSet'],
+                              query_short_forms=['Ito2013'],
+                              clauses=[self.ql.term(),
+                                       self.ql.license()])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_dataset(self):
+        query = self.ql.dataset_term_info(short_form=['Ito2013'])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_license(self):
+        query = self.ql.license_term_info(short_form=['VFBlicense_CC_BY_SA_4_0'])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_dataset_xrefs(self):
+        query = query_builder(query_labels=['DataSet'],
+                              query_short_forms=['Ito2013'],
+                              clauses=[self.ql.term(),
+                                       self.ql.xrefs()])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_dataset_pub(self):
+        query = query_builder(query_labels=['DataSet'],
+                              query_short_forms=['Ito2013'],
+                              clauses=[self.ql.term(),
+                                       self.ql.pubs()])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_dataset_anatomy_channel_image(self):
+        query = query_builder(query_labels=['DataSet'],
+                              query_short_forms=['Ito2013'],
+                              clauses=[self.ql.term(),
+                                       self.ql.anatomy_channel_image()])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_template(self):
+        query = self.ql.template_term_info(short_form=["VFB_00017894"], pretty_print=True)
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_template_domains(self):
+        query = query_builder(query_labels=['Template'],
+                              query_short_forms=['VFB_00017894'],
+                              clauses=[self.ql.term(),
+                                       self.ql.template_domain()])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_template_channel(self):
+        query = query_builder(query_labels=['Template'],
+                              query_short_forms=['VFB_00017894'],
+                              clauses=[self.ql.term(),
+                                       self.ql.template_channel()])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_neuron_class(self):
+        query = self.ql.neuron_class_term_info(short_form=["FBbt_00047609"], pretty_print=True)
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_neuron_class_null_split(self):
+        # Splits unlikely to be directly annotated with neuron only
+        query = self.ql.neuron_class_term_info(short_form=["FBbt_00005106"], pretty_print=True)
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_split_class(self):
+        query = self.ql.split_class_term_info(short_form=["VFBexp_FBtp0123136FBtp0119953"], pretty_print=True)
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def test_pub(self):
+        query = self.ql.pub_term_info(short_form=['FBrf0221438'])
+        r = self.qw.test(t=self,
+                         query=query)
+
+    def tearDown(self):
+        return
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)
 

@@ -42,13 +42,14 @@ class Clause:
         clause_params["prel"] = self.prel
         clause_params["limit"] = self.limit
 
-        params = {**self.match_params, **clause_params}
+        params = {**self.match_params, **clause_params, **self.MATCH.bound_params}
         return __().raw(inplace_bound_params(str(self.MATCH), params))
 
     def get_with(self, varz):
         if varz:
             self.WITH.append(__().raw(',' + ','.join(varz)))
-        return __().raw(inplace_bound_params(str(self.WITH), self.with_params))
+        params = {**self.with_params, **self.WITH.bound_params}
+        return __().raw(inplace_bound_params(str(self.WITH), params))
 
 
 def query_builder(clauses: List[Clause], query_short_forms=None,
@@ -88,7 +89,9 @@ def query_builder(clauses: List[Clause], query_short_forms=None,
             q.append(__().raw(","))
         return_clause_count += 1
 
-    return inplace_bound_params(str(q), q.bound_params)
+    cypher = str(q)
+    cypher = cypher.replace("`", "")
+    return inplace_bound_params(cypher, q.bound_params)
 
 
 class QueryLibraryCore:
@@ -158,30 +161,20 @@ class QueryLibraryCore:
                                             .rel_in("r", "", type=__().raw("'Related'")).node("$pvar", "$labels"),
                                             WITH=__.CASE.WHEN.o.IS_NULL.THEN([])
                                             .ELSE.COLLECT(__.map(
-                                                relation=Param("info_r_param", "info_r_param"),
-                                                object=Param("info_o_param", "info_o_param")
-                                            )).END.AS(__().raw("relationships")),
-                                            with_params={"info_r_param": roll_min_edge_info("r"),
-                                                         "info_o_param": roll_min_node_info("o")
-                                                         }
+                                                relation=roll_min_edge_info("r"),
+                                                object=roll_min_node_info("o")
+                                            )).END.AS(__().raw("relationships"))
                                             ))
 
-    def test_func(self):
-        q = Pypher()
-        my_dict = {"key1": "val1", "key2": "val2"}
-        # q.WHERE.raw(my_dict).AS(__.some)
-        map1 = q.map(
-            key1="val1",
-            key2="val2"
-        )
-
-        map2 = __.map(
-            key3="val3",
-            key4="val4"
-        )
-
-        merged = merge_maps(map1, map2)
-        print(merged)
+    def related_individuals(self): return (Clause(vars=["related_individuals"],
+                                                  MATCH=__.OptionalMatch.node("o", "Individual")
+                                                    .rel_in("r", "", type=__().raw("'Related'")).node("$pvar", "$labels"),
+                                                  WITH= __.CASE.WHEN.o.IS_NULL.THEN([])
+                                                    .ELSE.COLLECT(__.map(
+                                                        relation=roll_min_edge_info("r"),
+                                                        object=roll_min_node_info("o")
+                                                    )).END.AS(__().raw("related_individuals"))
+                                                  ))
 
     def anatomy_channel_image(self):
         return Clause(
@@ -238,7 +231,7 @@ class QueryLibraryCore:
         MATCH=__.OptionalMatch.node("technique", "Class").rel_in(labels="is_specified_output_of")
             .node("channel", "Individual").rel_out("irw", "in_register_with").node("template", "Individual")
             .rel_out(labels="depicts").node("$pvar", "$labels")
-            .WHERE(__.technique.property('short_form') == "'FBbi_00000224'").AND.exists(__.irw.property("index"))
+            .WHERE(__.technique.property('short_form') == Param("$tsf", "$tsf")).raw("AND").exists(__.irw.property("index"))
             .WITH(__().raw("$v"), __.COLLECT(__.map(channel=__.channel, irw=__.irw))).AS(__.painted_domains)
             .Unwind(__.painted_domains).AS(__.pd)
             .MATCH.node("channel", "Individual", short_form=__.pd.property("channel").property("short_form"))
@@ -250,7 +243,8 @@ class QueryLibraryCore:
                 center=__.coalesce(__.pd.property('irw').property('center'), __.List()),
                 index=__.List().raw(" + ").coalesce(__.pd.property('irw').property('index'), __.List()),
             )).AS(__.template_domains),
-        vars=["template_domains"])
+        vars=["template_domains"],
+        match_params={"tsf": "'FBbi_00000224'"})
 
     def template_channel(self):  return Clause(
         MATCH=__.MATCH.node("channel", "Individual").rel_in("irw", "in_register_with").node("channel", "Individual")
@@ -312,7 +306,7 @@ class QueryLibraryCore:
 
     def neuron_split(self):
         return Clause(
-            MATCH=__.OptionalMatch.node(labels="Class", label='intersectional expression pattern')
+            MATCH=__.OptionalMatch.node(labels="Class", label=__().raw("'intersectional expression pattern'"))
                 .rel_in(labels="SUBCLASSOF").node("ep", "Class").rel_in("ar", "part_of").node("anoni", "Individual")
                 .rel_out(labels="INSTANCEOF").node("$pvar"),
             WITH=__.CASE.WHEN.ep.IS_NULL.THEN([])
@@ -321,7 +315,7 @@ class QueryLibraryCore:
 
     def split_neuron(self):
         return Clause(
-            MATCH=__.OptionalMatch.node(labels="Class", label='intersectional expression pattern')
+            MATCH=__.OptionalMatch.node(labels="Class", label=__().raw("'intersectional expression pattern'"))
                 .rel_in(labels="SUBCLASSOF").node("$pvar").rel_in("ar", "part_of").node("anoni", "Individual")
                 .rel_out(labels="INSTANCEOF").node("n", "Neuron"),
             WITH=__.CASE.WHEN.n.IS_NULL.THEN([])
@@ -357,8 +351,8 @@ class QueryLibraryCore:
         return Clause(
             MATCH=__.OptionalMatch.node("$pvar").rel_in(labels="has_source").node("i", "Individual")
                 .WITH(__.i, __().raw("$v")).OptionalMatch.node("i").rel(labels="INSTANCEOF").node("c", "Class"),
-            WITH=__.Distinct.map(images=__.count(__.Distinct.i),
-                                 types=__.count(__.Distinct.c)).AS(__.dataset_counts),
+            WITH=__.Distinct(__.map(images=__.count(__.Distinct(__.i)),
+                                 types=__.count(__.Distinct(__.c)))).AS(__.dataset_counts),
             vars=['dataset_counts']
         )
 
@@ -525,7 +519,7 @@ class QueryLibrary(QueryLibraryCore):
             query_labels=['Individual', 'pub'],
             clauses=[self.term(),
                      self.dataSet_license(prel='has_reference')]
-        ).append(return_clause_hack)
+        ) + inplace_bound_params(str(return_clause_hack), return_clause_hack.bound_params)
 
     def template_term_info(self, short_form: list, *args, pretty_print=False,
                            q_name='Get JSON for Template'):
@@ -550,6 +544,11 @@ def inplace_bound_params(cypher, params):
 
     Return: updated query string
     """
+    if "empty_str" not in params:
+        params["empty_str"] = "''"
+    if "first_index" not in params:
+        params["first_index"] = 0
+    # cypher = cypher.replace("`$labels`", "$labels")
     for param in params:
         if param == "labels" and not params[param]:
             cypher = handle_empty_labels(cypher)
@@ -566,7 +565,7 @@ def handle_empty_labels(cypher):
     for label_index in all_label_indexes:
         semicolon_index = cypher.find(":", label_index - 2, label_index)
         if semicolon_index >= 0:
-            cypher = cypher[:semicolon_index] + cypher[label_index + len("$labels") + 1:]
+            cypher = cypher[:semicolon_index] + cypher[label_index + len("$labels"):]
     return cypher
 
 
