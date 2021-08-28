@@ -176,29 +176,17 @@ class QueryLibraryCore:
                                                     )).END.AS(__().raw("related_individuals"))
                                                   ))
 
-    def anatomy_channel_image(self):
+    def ep_stage(self):
         return Clause(
-            MATCH=__.CALL.func("apoc.cypher.run", __().raw("'")
-                               .WITH(Param("$pvar", ""))
-                               .OptionalMatch.node("$pvar", "$labels").rel_in("", "has_source|SUBCLASSOF|INSTANCEOF*")
-                               .node("i", "Individual")
-                               .rel_in("", "depicts").node("channel", "Individual").rel_out("irw", "in_register_with")
-                               .node("template", "Individual").rel_out("", "depicts").node("template_anat",
-                                                                                           "Individual")
-                               .RETURN(__.template, __.channel, __.template_anat, __.i, __.irw)
-                               .Limit(5)
-                               .raw("'"), __.map("$pvar:$pvar"))
-                .YIELD(__.value.WITH.value.property("template").AS(__.template),
-                       __.value.property("channel").AS(__.channel),
-                       __.value.property("template_anat").AS(__.template_anat), __.value.property("i").AS(__.i),
-                       __.value.property("irw").AS(__.irw), Param("$v", ""))
-                .OptionalMatch.node("channel").rel_out(labels="is_specified_output_of").node("technique", "Class"),
-            WITH=__.CASE.WHEN.channel.IS_NULL.THEN([])
-                .ELSE.COLLECT(__.map(anatomy=roll_min_node_info("i"), channel_image=self._channel_image_return))
-                .END.AS(__.anatomy_channel_image),
-            vars=["anatomy_channel_image"],
-            limit='limit 5, {}) yield value'
+            MATCH=__.OptionalMatch.node("$pvar", "$labels").rel_out("r", "Related").node("o", "FBdv"),
+            WITH=__.CASE.WHEN.o.IS_NULL.THEN([]).ELSE.COLLECT(__.map(
+                relation=roll_min_edge_info("r"),
+                object=roll_min_node_info("o")
+            )).END.AS(__.stages),
+            vars=['stages']
         )
+
+    # IMAGES
 
     def _set_image_query_common_elements(self):
         # TODO check $v %s $limit
@@ -226,6 +214,37 @@ class QueryLibraryCore:
                 .ELSE.COLLECT(self._channel_image_return.clone()).END.AS(__.channel_image),
             match_params={"param1": ""},
             vars=["channel_image"])
+
+    def image_type(self):
+        return Clause(
+            MATCH=__.OptionalMatch.node("$pvar").rel_out(labels="INSTANCEOF").node("typ", "Class"),
+            WITH=__.CASE.WHEN.typ.IS_NULL.THEN([])
+                .ELSE.COLLECT(roll_min_node_info('typ').clone()).END.AS(__.types),
+        vars=["types"])
+
+    def anatomy_channel_image(self):
+        return Clause(
+            MATCH=__.CALL.func("apoc.cypher.run", __().raw("'")
+                               .WITH(Param("$pvar", ""))
+                               .OptionalMatch.node("$pvar", "$labels").rel_in("", "has_source|SUBCLASSOF|INSTANCEOF*")
+                               .node("i", "Individual")
+                               .rel_in("", "depicts").node("channel", "Individual").rel_out("irw", "in_register_with")
+                               .node("template", "Individual").rel_out("", "depicts").node("template_anat",
+                                                                                           "Individual")
+                               .RETURN(__.template, __.channel, __.template_anat, __.i, __.irw)
+                               .Limit(5)
+                               .raw("'"), __.map("$pvar:$pvar"))
+                .YIELD(__.value.WITH.value.property("template").AS(__.template),
+                       __.value.property("channel").AS(__.channel),
+                       __.value.property("template_anat").AS(__.template_anat), __.value.property("i").AS(__.i),
+                       __.value.property("irw").AS(__.irw), Param("$v", ""))
+                .OptionalMatch.node("channel").rel_out(labels="is_specified_output_of").node("technique", "Class"),
+            WITH=__.CASE.WHEN.channel.IS_NULL.THEN([])
+                .ELSE.COLLECT(__.map(anatomy=roll_min_node_info("i"), channel_image=self._channel_image_return))
+                .END.AS(__.anatomy_channel_image),
+            vars=["anatomy_channel_image"],
+            limit='limit 5, {}) yield value'
+        )
 
     def template_domain(self):  return Clause(
         MATCH=__.OptionalMatch.node("technique", "Class").rel_in(labels="is_specified_output_of")
@@ -396,6 +415,15 @@ def roll_min_edge_info(var):
     )
 
 
+def roll_pub_return(var):
+    return __.map(
+        core=roll_min_node_info(var),
+        PubMed=__.coalesce(__().raw(var).property('PMID')[first_index], empty_str),
+        FlyBase=__.coalesce(__().raw(var).property('FlyBase')[first_index], empty_str),
+        DOI=__.coalesce(__().raw(var).property('DOI')[first_index], empty_str),
+    )
+
+
 def roll_node_map(var: str, base_map=None, typ=''):
     node_map = None
     if typ:
@@ -536,6 +564,148 @@ class QueryLibrary(QueryLibraryCore):
                                       ],
                              q_name=q_name,
                              pretty_print=pretty_print)
+
+    #
+
+    def anat_2_ep_wrapper(self):
+        return Clause(
+            MATCH=__.MATCH.node("ep", "Class:Expression_pattern").rel_in("ar", ["overlaps", "part_of"])
+                .node(labels="Individual").rel_out(labels="INSTANCEOF").node("anat", "Class")
+                .WHERE.anat.property('short_form').operator('in', Param('ssf', "ssf"))
+                .WITH.raw("DISTINCT").Collect(__.Distinct(__.ar.property("pub"))).AS(__.pubs).raw(", ").anat.raw(", ").ep
+                .Unwind(__.pubs).AS(__.p)
+                .MATCH.node("pub", "pub", short_form=__.p),
+            WITH=__.anat.raw(", ").ep.raw(", ").Collect(roll_pub_return("pub")).AS(__.pubs),
+            vars=['pubs'],
+            node_vars=['anat', 'ep'],
+            RETURN=__().append(roll_min_node_info('anat').clone()).AS("anatomy").raw(", ")
+                .append(roll_min_node_info('ep').clone()).AS("expression_pattern")
+        )
+
+    def ep_2_anat_wrapper(self):
+        return Clause(
+            # MATCH=Template("MATCH (ep:Expression_pattern:Class)<-[ar:overlaps|part_of]-(anoni:Individual)"
+            #                "-[:INSTANCEOF]->(anat:Class) WHERE ep.short_form in $ssf "
+            #                "WITH  anoni, anat, ar "
+            #                "OPTIONAL MATCH (p:pub { short_form: ar.pub}) "),
+            # WITH="anat, anoni, %s AS pub" % roll_pub_return("p"),
+            MATCH=__.MATCH.node("ep", "Expression_pattern:Class").rel_in("ar", ["overlaps", "part_of"])
+                .node("anoni", "Individual").rel_out(labels="INSTANCEOF").node("anat", "Class")
+                .WHERE.ep.property('short_form').operator('in', Param('ssf', "ssf"))
+                .WITH(__.anoni, __.anat, __.ar)
+                .OptionalMatch.node("p", "pub", short_form=__.ar.property("pub")),
+            WITH=__.anat.raw(", ").anoni.raw(", ").append(roll_pub_return("p").clone()).AS(__.pub),
+            vars=['pub'],
+            node_vars=['anoni', 'anat'],
+            RETURN=__().append(roll_min_node_info('anat').clone()).AS("anatomy")
+        )
+
+        # XREFS
+
+    def template_2_datasets_wrapper(self):
+        return Clause(MATCH=__.MATCH.node("t", "Template").rel_in("depicts").node("tc", "Template")
+                          .rel(labels="in_register_with").node("c", "Individual").rel_out("depicts")
+                          .node("ai", "Individual").rel_out(labels="has_source").node("ds", "DataSet")
+                          .WHERE.t.property("short_form").operator('in', Param('ssf', "ssf")),
+                      WITH=__.Distinct(__.ds),
+                      vars=[],
+                      node_vars=['ds'],
+                      RETURN=__().append(roll_min_node_info('ds').clone()).AS("dataset")
+                      )
+
+    def all_datasets_wrapper(self):
+        return Clause(
+            MATCH=__.MATCH.node("ds", "DataSet"),
+            WITH=__.ds,
+            vars=[],
+            node_vars=['ds'],
+            RETURN=__().append(roll_min_node_info('ds').clone()).AS("dataset")
+        )
+
+    def anat_2_ep_query(self, short_forms, *args, pretty_print=False):
+        # we want images of eps (ep, returned by self.anat_2_ep_wrapper())
+        aci = self.anatomy_channel_image()
+        aci.__setattr__('pvar', 'ep')
+        aci.__setattr__('limit', '')
+        return query_builder(query_labels=['Class'],
+                             query_short_forms=short_forms,
+                             clauses=[self.anat_2_ep_wrapper(),
+                                      aci],
+                             q_name='Get JSON for anat_2_ep query',
+                             pretty_print=pretty_print)
+
+    def ep_2_anat_query(self, short_form, *args, pretty_print=False):
+        # columns: anatomy,
+        aci = self.anatomy_channel_image()
+        # We want images of anat, returned by self.anat_2_ep_wrapper())
+        aci.__setattr__('pvar', 'anat')
+        # Add Synaptic neuropil restriction
+        aci.__setattr__('starting_labels', ['Synaptic_neuropil'])
+        # Return relationship on anoni
+        rel = self.ep_stage()
+        rel.__setattr__('pvar', 'anoni')
+
+        return query_builder(query_labels=['Class'],
+                             query_short_forms=[short_form],
+                             clauses=[self.ep_2_anat_wrapper(),
+                                      rel,
+                                      aci],
+                             q_name='Get JSON for ep_2_anat query',
+                             pretty_print=pretty_print)
+
+    def template_2_datasets_query(self, short_form):
+        aci = self.anatomy_channel_image()
+        aci.__setattr__('pvar', 'ds')
+        # In the absence of extra tools available for Neo4j3.n
+        # We can't set limits on numbers of images.
+        # For this reason, we may have to remove aci from this
+        # query for now.  Maybe add counts instead for now?
+        pub = self.pubs()
+        pub.__setattr__('pvar', 'ds')
+        li = self.license()
+        li.__setattr__('pvar', 'ds')
+        counts = self.dataset_counts()
+        counts.__setattr__('pvar', 'ds')
+        return query_builder(query_short_forms=[short_form],
+                             clauses=[self.template_2_datasets_wrapper(),
+                                      aci,  # commenting as too slow w/o limit
+                                      pub,
+                                      li,
+                                      counts])
+
+    def all_datasets_query(self):
+        aci = self.anatomy_channel_image()
+        aci.__setattr__('pvar', 'ds')
+        # In the absence of extra tools available for Neo4j3.n
+        # We can't set limits on numbers of images.
+        # For this reason, we may have to remove aci from this
+        # query for now.  Maybe add counts instead for now?
+        pub = self.pubs()
+        pub.__setattr__('pvar', 'ds')
+        li = self.license()
+        li.__setattr__('pvar', 'ds')
+        counts = self.dataset_counts()
+        counts.__setattr__('pvar', 'ds')
+        return query_builder(clauses=[self.all_datasets_wrapper(),
+                                      aci, # commenting as too slow w/o limit
+                                      pub,
+                                      li,
+                                      counts])
+
+    def anat_image_query(self, short_forms: List):
+        return query_builder(query_short_forms=short_forms,
+                             query_labels=['Individual'],
+                             clauses=[self.term(),
+                                      self.channel_image(),
+                                      self.image_type()],
+                             pretty_print=True)
+
+    def anat_query(self, short_forms: List):
+        return query_builder(query_short_forms=short_forms,
+                             query_labels=['Class', 'Anatomy'],
+                             clauses=[self.term(),
+                                      self.anatomy_channel_image()],
+                             pretty_print=True)
 
 
 def inplace_bound_params(cypher, params):

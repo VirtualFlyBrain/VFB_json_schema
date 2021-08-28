@@ -1,6 +1,6 @@
 import unittest
 from vfb_query_builder.pypher_query_roller import QueryLibrary, query_builder
-from .test_tools import TestWrapper
+from vfb_query_builder.test.test_tools import TestWrapper
 
 
 class TermInfoRollerTest(unittest.TestCase):
