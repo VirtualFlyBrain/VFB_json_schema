@@ -370,8 +370,8 @@ class QueryLibraryCore:
         return Clause(
             MATCH=__.OptionalMatch.node("$pvar").rel_in(labels="has_source").node("i", "Individual")
                 .WITH(__.i, __().raw("$v")).OptionalMatch.node("i").rel(labels="INSTANCEOF").node("c", "Class"),
-            WITH=__.Distinct(__.map(images=__.count(__.Distinct(__.i)),
-                                 types=__.count(__.Distinct(__.c)))).AS(__.dataset_counts),
+            WITH=__().raw("DISTINCT").map(images=__.count(__.Distinct(__.i)),
+                                 types=__.count(__.Distinct(__.c))).AS(__.dataset_counts),
             vars=['dataset_counts']
         )
 
@@ -604,10 +604,10 @@ class QueryLibrary(QueryLibraryCore):
 
     def template_2_datasets_wrapper(self):
         return Clause(MATCH=__.MATCH.node("t", "Template").rel_in("depicts").node("tc", "Template")
-                          .rel(labels="in_register_with").node("c", "Individual").rel_out("depicts")
+                          .rel(labels="in_register_with").node("c", "Individual").rel_out(labels="depicts")
                           .node("ai", "Individual").rel_out(labels="has_source").node("ds", "DataSet")
                           .WHERE.t.property("short_form").operator('in', Param('ssf', "ssf")),
-                      WITH=__.Distinct(__.ds),
+                      WITH=__().raw("DISTINCT").ds,
                       vars=[],
                       node_vars=['ds'],
                       RETURN=__().append(roll_min_node_info('ds').clone()).AS("dataset")
