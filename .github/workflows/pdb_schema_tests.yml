@@ -33,7 +33,7 @@ jobs:
         cat src/vfb_query_builder/test/test_tools.py
         git clone https://github.com/VirtualFlyBrain/VFB_neo4j.git
         
-    - name: results_schema_tests
+    - name: Results_schema_tests
       run: |
         cd src
         export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
@@ -43,7 +43,7 @@ jobs:
         cd src
         export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
         python -m vfb_query_builder.test.TermInfo_schema_tests
-    - name: TermInfo_schema_tests
+    - name: Query_roller_tests
       run: |
         cd src
         export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
