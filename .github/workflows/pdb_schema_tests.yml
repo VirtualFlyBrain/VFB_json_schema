@@ -5,9 +5,8 @@ name: PDB schema tests
 
 on:
   push:
-    branches: [ * ]
-  pull_request:
-    branches: [ master ]
+    branches: '**'
+    tags: 'v*'
   schedule:
     - cron: "0 13 * * 1"
 
@@ -32,12 +31,6 @@ jobs:
         sed -i "s|neo4j_connect('http://.*\.virtualflybrain\.org', 'neo4j', 'neo4j')|neo4j_connect('http://$VFBPDB', 'neo4j', 'neo4j')|g" /src/vfb_query_builder/test/test_tools.py
         grep -r '= neo4j_connect(' .
         export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: results_schema_tests
       run: |
         cd src
