@@ -1,0 +1,46 @@
+name: PDB-dev schema tests
+
+on:
+  push:
+    branches: '**'
+  schedule:
+    - cron: "0 13 * * 1"
+
+env:
+  VFBPDB: pdb-dev.virtualflybrain.org
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.7"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        cat src/vfb_query_builder/test/test_tools.py
+        sed -i "s|Neo4jConnect('http://.*\.virtualflybrain\.org', 'neo4j', 'neo4j')|Neo4jConnect('http://$VFBPDB', 'neo4j', 'vfb')|g" src/vfb_query_builder/test/test_tools.py
+        cat src/vfb_query_builder/test/test_tools.py
+        git clone https://github.com/VirtualFlyBrain/VFB_neo4j.git
+        
+    - name: Results_schema_tests
+      run: |
+        cd src
+        export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
+        python -m vfb_query_builder.test.results_schema_tests
+    - name: TermInfo_schema_tests
+      run: |
+        cd src
+        export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
+        python -m vfb_query_builder.test.TermInfo_schema_tests
+    - name: Query_roller_tests
+      run: |
+        cd src
+        export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
+        python -m vfb_query_builder.test.query_roller_tests
