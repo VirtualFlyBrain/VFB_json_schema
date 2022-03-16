@@ -28,7 +28,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        sed -i "s|neo4j_connect('http://.*\.virtualflybrain\.org', 'neo4j', 'neo4j')|neo4j_connect('http://$VFBPDB', 'neo4j', 'neo4j')|g" /src/vfb_query_builder/test/test_tools.py
+        sed -i "s|neo4j_connect('http://.*\.virtualflybrain\.org', 'neo4j', 'neo4j')|neo4j_connect('http://$VFBPDB', 'neo4j', 'neo4j')|g" src/vfb_query_builder/test/test_tools.py
         grep -r '= neo4j_connect(' .
         export PYTHONPATH=$PYTHONPATH:$(pwd)/src/:$(pwd)/VFB_neo4j/src/
     - name: results_schema_tests
