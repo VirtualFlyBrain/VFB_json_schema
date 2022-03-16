@@ -29,7 +29,7 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         cat src/vfb_query_builder/test/test_tools.py
-        sed -i "s|neo4j_connect('http://.*\.virtualflybrain\.org', 'neo4j', 'neo4j')|neo4j_connect('http://$VFBPDB', 'neo4j', 'vfb')|g" src/vfb_query_builder/test/test_tools.py
+        sed -i "s|Neo4jConnect('http://.*\.virtualflybrain\.org', 'neo4j', 'neo4j')|Neo4jConnect('http://$VFBPDB', 'neo4j', 'vfb')|g" src/vfb_query_builder/test/test_tools.py
         cat src/vfb_query_builder/test/test_tools.py
         git clone https://github.com/VirtualFlyBrain/VFB_neo4j.git
         
