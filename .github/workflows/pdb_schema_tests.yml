@@ -11,7 +11,7 @@ on:
     - cron: "0 13 * * 1"
 
 env:
-  VFBPDB=pdb.v4.virtualflybrain.org
+  VFBPDB: pdb.v4.virtualflybrain.org
 
 jobs:
   build:
