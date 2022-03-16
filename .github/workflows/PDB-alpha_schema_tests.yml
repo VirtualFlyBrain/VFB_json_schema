@@ -3,7 +3,6 @@ name: PDB-alpha schema tests
 on:
   push:
     branches: '**'
-    tags: 'v*'
   schedule:
     - cron: "0 13 * * 1"
 
