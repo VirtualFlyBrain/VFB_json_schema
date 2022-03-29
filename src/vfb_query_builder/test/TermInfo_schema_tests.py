@@ -199,7 +199,7 @@ class TermInfoRollerTest(unittest.TestCase):
     def test_split_class(self):
         query = self.ql.split_class_term_info(short_form=["VFBexp_FBtp0123136FBtp0119953"], pretty_print=True)
         r = self.qw.test(t=self,
-                         query=query)
+                         query=query, single=False)
 
     def test_pub(self):
         query = self.ql.pub_term_info(short_form=['FBrf0221438'])
