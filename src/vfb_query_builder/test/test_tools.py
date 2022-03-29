@@ -9,15 +9,12 @@ import warnings
 class TestWrapper:
 
     def __init__(self, schema):
-
-
-
         # This is all completely dependent on repo structure!
         # Ideally it would be configured by passing path as arg
         # But passing args doesn't work reliably with unittest lib.
-        pwdl = os.getcwd()
-        base = 'file://' + pwdl + '/json_schema/'
-        self.V = get_validator(pwdl + "/json_schema/" + schema,
+        pwdl = os.path.dirname(os.path.abspath(__file__))
+        base = 'file://' + pwdl + '/../../json_schema/'
+        self.V = get_validator(pwdl + "/../../json_schema/" + schema,
                                base_uri=base)
         self.nc = Neo4jConnect('http://pdb.p2.virtualflybrain.org', 'neo4j', 'neo4j')
 
