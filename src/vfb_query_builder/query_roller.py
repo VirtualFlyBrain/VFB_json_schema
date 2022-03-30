@@ -718,7 +718,7 @@ def term_info_export(escape=True):
         q_name = qf.__kwdefaults__['q_name']
         q = qf(short_form='$ids')
         if escape:
-            out[q_name] = q.replace('  ',' ').replace('<','&lt;').replace('\n',' ')
+            out[q_name] = q.replace('  ',' ').replace('<','&lt;').replace('\n',' ').replace('  ',' ')
         else:
             out[q_name] = q
     return json.dumps(out)
