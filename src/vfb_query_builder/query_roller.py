@@ -716,9 +716,9 @@ def term_info_export(escape=True):
         # This whole approach feels a bit hacky...
         qf = getattr(ql, qm)
         q_name = qf.__kwdefaults__['q_name']
-        q = qf(short_form=['$ID'])
+        q = qf(short_form='$ids')
         if escape:
-            out[q_name] = saxutils.escape(q)
+            out[q_name] = q.replace('  ',' ').replace('<','&lt;').replace('\n',' ')
         else:
             out[q_name] = q
     return json.dumps(out)
