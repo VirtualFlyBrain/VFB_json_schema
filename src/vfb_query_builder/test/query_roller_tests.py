@@ -37,7 +37,7 @@ class QueryRollerTest(unittest.TestCase):
                 model.append(line.decode('utf-8').split('"')[1])
         for query in queries:
             print(query)
-            print(queries[query]))
+            print(queries[query])
             for cypher in model:
                 if query in cypher:
                     print(get_edits_string(cypher, queries[query]))
