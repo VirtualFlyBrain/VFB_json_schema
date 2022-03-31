@@ -14,6 +14,8 @@ class QueryRollerTest(unittest.TestCase):
         green = lambda text: f"\033[38;2;0;255;0m{text}\033[38;2;255;255;255m"
         blue = lambda text: f"\033[38;2;0;0;255m{text}\033[38;2;255;255;255m"
         white = lambda text: f"\033[38;2;255;255;255m{text}\033[38;2;255;255;255m"
+        oldquery = lambda text: f"\x1b[3;30;43m{text}\x1b[0m"
+        newquery = lambda text: f"\x1b[6;30;42m{text}\x1b[0m"
         def get_edits_string(old, new):
             result = ""
             codes = difflib.SequenceMatcher(a=old, b=new).get_opcodes()
@@ -37,9 +39,10 @@ class QueryRollerTest(unittest.TestCase):
                 model.append(line.decode('utf-8').split('"')[1])
         for query in queries:
             print(query)
-            print(queries[query])
+            print(newquery(queries[query]))
             for cypher in model:
                 if query in cypher:
+                    print(oldquery(cypher))
                     print(get_edits_string(cypher, queries[query]))
     
 if __name__ == '__main__':
