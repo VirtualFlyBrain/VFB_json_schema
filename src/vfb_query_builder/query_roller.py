@@ -331,11 +331,11 @@ class QueryLibraryCore:
             "OPTIONAL MATCH (technique:Class)<-[:is_specified_output_of]"
             "-(channel:Individual)"
             "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar$labels) "
-            "WHERE technique.short_form = 'FBbi_00000224' "
+            "WHERE technique.short_form IN [= 'FBbi_00000224','FBbi_00000251'] "
             "AND exists(irw.index) "
             "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
             "UNWIND painted_domains AS pd "
-            "MATCH (channel:Individual { short_form: pd.channel.short_form})"
+            "OPTIONAL MATCH (channel:Individual { short_form: pd.channel.short_form})"
             "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
         WITH="collect({ anatomical_type: %s ,"
              " anatomical_individual: %s, folder: pd.irw.folder[0], "
