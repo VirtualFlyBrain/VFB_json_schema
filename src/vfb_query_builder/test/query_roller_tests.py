@@ -36,8 +36,6 @@ class QueryRollerTest(unittest.TestCase):
         model = []
         xmi = []
         for line in ecore:
-            if len(line.decode('utf-8')) < 2:
-                continue
             xmi.append(line.decode('utf-8'))
             if "query=" in line.decode('utf-8') and "&quot;statement&quot;" in line.decode('utf-8'):
                 model.append(line.decode('utf-8').split('"')[1])
