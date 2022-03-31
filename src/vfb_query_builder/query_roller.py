@@ -415,7 +415,7 @@ class QueryLibraryCore:
     def dataSet_license(self, prel='has_source'):
         return Clause(
             MATCH=Template("OPTIONAL MATCH "
-                           "($pvar$labels)-[:$prel]-(ds:DataSet)"
+                           "($pvar$labels)-[:$prel]->(ds:DataSet)"
                            "-[:has_license|license]->(l:License)"),
             WITH="COLLECT ({ dataset: %s, license: %s}) "
                  "AS dataset_license" % (roll_node_map(var='ds',
