@@ -314,7 +314,7 @@ class QueryLibraryCore:
                 "(channel:Individual)-[irw:in_register_with] "
                 "->(template:Individual)-[:depicts]-> "
                 "(template_anat:Individual) RETURN template, channel, template_anat, i, irw "
-                "limit 5', {$pvar:$pvar}) yield value with value.template as template, value.channel as channel,"
+                "limit 10', {$pvar:$pvar}) yield value with value.template as template, value.channel as channel,"
                 "value.template_anat as template_anat, value.i as i, value.irw as irw, $v "
                 "OPTIONAL MATCH (channel)-[:is_specified_output_of]"
                 "->(technique:Class) "),
@@ -324,7 +324,7 @@ class QueryLibraryCore:
                      roll_min_node_info("i"), self._channel_image_return),
 
             vars=["anatomy_channel_image"],
-            limit='limit 5, {}) yield value')
+            limit='limit 10, {}) yield value')
 
     def template_domain(self):  return Clause(
         MATCH=Template(
