@@ -331,7 +331,7 @@ class QueryLibraryCore:
             "OPTIONAL MATCH (technique:Class)<-[:is_specified_output_of]"
             "-(channel:Individual)"
             "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar$labels) "
-            "WHERE technique.short_form IN [= 'FBbi_00000224','FBbi_00000251'] "
+            "WHERE technique.short_form IN ['FBbi_00000224','FBbi_00000251'] "
             "AND exists(irw.index) "
             "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
             "UNWIND painted_domains AS pd "
