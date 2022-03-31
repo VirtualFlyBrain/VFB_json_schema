@@ -51,7 +51,7 @@ class QueryRollerTest(unittest.TestCase):
                             line = line.replace(cypher, queries[query])
                             break
         print('New vfb.xmi')
-        print('\n'.join(xmi))
+        print(''.join(xmi))
                             
 if __name__ == '__main__':
     unittest.main()
