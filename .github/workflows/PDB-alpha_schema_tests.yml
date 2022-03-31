@@ -26,7 +26,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         cat src/vfb_query_builder/test/test_tools.py
         sed -i "s|Neo4jConnect('http://.*\.virtualflybrain\.org', 'neo4j', 'neo4j')|Neo4jConnect('http://$VFBPDB', 'neo4j', 'vfb')|g" src/vfb_query_builder/test/test_tools.py
-        cat src/vfb_query_builder/test/test_tools.py
+        sed -i 's|ecore=urllib.request.urlopen("https://github.com/VirtualFlyBrain/geppetto-vfb/raw/.*/model/vfb.xmi")|ecore=urllib.request.urlopen("https://github.com/VirtualFlyBrain/geppetto-vfb/raw/alpha/model/vfb.xmi")|g' src/vfb_query_builder/test/query_roller_tests.py
         git clone https://github.com/VirtualFlyBrain/VFB_neo4j.git
         
     - name: Results_schema_tests
