@@ -207,7 +207,7 @@ class QueryLibraryCore:
              "link_text: primary.label + ' on ' + s.label, " \
              "homepage: coalesce(s.homepage[0], ''), " \
              "site: %s, icon: coalesce(s.link_icon_url[0], ''),  " \
-             "link_postfix: coalesce(s.link_postfix, '')}) "  # Should be $pvar$labels not primary, but need sub on WITH!
+             "link_postfix: coalesce(s.link_postfix[0], '')}) "  # Should be $pvar$labels not primary, but need sub on WITH!
         xrs = "END AS self_xref, $v"  # Passing vars
         xrx = "+ self_xref END AS xrefs"
 
