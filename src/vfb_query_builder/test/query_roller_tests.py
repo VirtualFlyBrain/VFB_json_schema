@@ -46,9 +46,9 @@ class QueryRollerTest(unittest.TestCase):
                 if query in cypher:
                     print(oldquery(cypher))
                     print(get_edits_string(cypher, queries[query]))
-                    for line in xmi:
+                    for index, line in enumerate(xmi):
                         if cypher in line:
-                            line = line.replace(cypher, queries[query])
+                            xmi[index] = line.replace(cypher, queries[query])
                             break
         print('New vfb.xmi')
         print(''.join(xmi))
