@@ -457,8 +457,8 @@ class QueryLibrary(QueryLibraryCore):
     def anatomical_ind_term_info(self, short_form: list,
                                  *args,
                                  pretty_print=False,
-                                 q_name='Get JSON for Individual:Anatomy'):
-        return query_builder(query_labels=['Individual', 'Anatomy'],
+                                 q_name='Get JSON for Individual'):
+        return query_builder(query_labels=['Individual'],
                              query_short_forms=short_form,
                              clauses=[self.term(),
                                       self.dataSet_license(),
