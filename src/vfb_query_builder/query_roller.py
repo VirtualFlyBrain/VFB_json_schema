@@ -552,7 +552,9 @@ class QueryLibrary(QueryLibraryCore):
             query_short_forms=short_form,
             query_labels=['Individual', 'pub'],
             clauses=[self.term(),
-                     self.dataSet_license(prel='has_reference')]
+                     self.dataSet_license(prel='has_reference')],
+            q_name=q_name,
+            pretty_print=pretty_print
         ) + return_clause_hack
 
 
