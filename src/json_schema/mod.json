@@ -29,6 +29,13 @@
             "type": "string"
           }
         },
+        "unique_facets": {
+          "description": "A filtered list of term types, corresponding to neo4j:labels in the VFB production database and to the gross typing system used by VFB: Geppetto.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "symbol": {
           "description": "",
           "type": "string"

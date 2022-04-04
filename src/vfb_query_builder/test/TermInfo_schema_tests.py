@@ -38,7 +38,7 @@ class TermInfoRollerTest(unittest.TestCase):
                                        self.ql.xrefs()],
                               query_short_forms=['VFBexp_FBtp0123937FBtp0120068'])
         r = self.qw.test(t=self,
-                         query=query)
+                         query=query, single=False)
 
     def test_class_parents(self):
         query = query_builder(query_labels=["Class"],

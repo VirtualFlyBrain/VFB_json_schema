@@ -120,7 +120,7 @@ def roll_min_node_info(var):
     """Rolls core JSON (specifying minimal info about an entity.
     var: the variable name for the entity within this cypher clause."""
     return "{ short_form: %s.short_form, label: coalesce(%s.label,''), " \
-           "iri: %s.iri, types: labels(%s), symbol: coalesce(%s.`symbol`[0], '')} " % (var, var, var, var, var)
+           "iri: %s.iri, types: labels(%s), unique_facets: apoc.coll.sort(coalesce(%s.uniqueFacets, [])), symbol: coalesce(%s.symbol[0], '')} " % (var, var, var, var, var, var)
 
 
 
@@ -207,7 +207,7 @@ class QueryLibraryCore:
              "link_text: primary.label + ' on ' + s.label, " \
              "homepage: coalesce(s.homepage[0], ''), " \
              "site: %s, icon: coalesce(s.link_icon_url[0], ''),  " \
-             "link_postfix: coalesce(s.link_postfix, '')}) "  # Should be $pvar$labels not primary, but need sub on WITH!
+             "link_postfix: coalesce(s.link_postfix[0], '')}) "  # Should be $pvar$labels not primary, but need sub on WITH!
         xrs = "END AS self_xref, $v"  # Passing vars
         xrx = "+ self_xref END AS xrefs"
 
@@ -314,7 +314,7 @@ class QueryLibraryCore:
                 "(channel:Individual)-[irw:in_register_with] "
                 "->(template:Individual)-[:depicts]-> "
                 "(template_anat:Individual) RETURN template, channel, template_anat, i, irw "
-                "limit 5', {$pvar:$pvar}) yield value with value.template as template, value.channel as channel,"
+                "limit 10', {$pvar:$pvar}) yield value with value.template as template, value.channel as channel,"
                 "value.template_anat as template_anat, value.i as i, value.irw as irw, $v "
                 "OPTIONAL MATCH (channel)-[:is_specified_output_of]"
                 "->(technique:Class) "),
@@ -324,18 +324,18 @@ class QueryLibraryCore:
                      roll_min_node_info("i"), self._channel_image_return),
 
             vars=["anatomy_channel_image"],
-            limit='limit 5, {}) yield value')
+            limit='limit 10, {}) yield value')
 
     def template_domain(self):  return Clause(
         MATCH=Template(
             "OPTIONAL MATCH (technique:Class)<-[:is_specified_output_of]"
             "-(channel:Individual)"
             "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar$labels) "
-            "WHERE technique.short_form = 'FBbi_00000224' "
+            "WHERE technique.short_form IN ['FBbi_00000224','FBbi_00000251'] "
             "AND exists(irw.index) "
             "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
             "UNWIND painted_domains AS pd "
-            "MATCH (channel:Individual { short_form: pd.channel.short_form})"
+            "OPTIONAL MATCH (channel:Individual { short_form: pd.channel.short_form})"
             "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
         WITH="collect({ anatomical_type: %s ,"
              " anatomical_individual: %s, folder: pd.irw.folder[0], "
@@ -457,8 +457,8 @@ class QueryLibrary(QueryLibraryCore):
     def anatomical_ind_term_info(self, short_form: list,
                                  *args,
                                  pretty_print=False,
-                                 q_name='Get JSON for Individual:Anatomy'):
-        return query_builder(query_labels=['Individual', 'Anatomy'],
+                                 q_name='Get JSON for Individual'):
+        return query_builder(query_labels=['Individual'],
                              query_short_forms=short_form,
                              clauses=[self.term(),
                                       self.dataSet_license(),
@@ -552,7 +552,9 @@ class QueryLibrary(QueryLibraryCore):
             query_short_forms=short_form,
             query_labels=['Individual', 'pub'],
             clauses=[self.term(),
-                     self.dataSet_license(prel='has_reference')]
+                     self.dataSet_license(prel='has_reference')],
+            q_name=q_name,
+            pretty_print=pretty_print
         ) + return_clause_hack
 
 
@@ -716,9 +718,9 @@ def term_info_export(escape=True):
         # This whole approach feels a bit hacky...
         qf = getattr(ql, qm)
         q_name = qf.__kwdefaults__['q_name']
-        q = qf(short_form=['$ID'])
+        q = qf(short_form='[$id]')
         if escape:
-            out[q_name] = saxutils.escape(q)
+            out[q_name] = '&quot;statement&quot;: &quot;' + q.replace('  ',' ').replace('<','&lt;').replace('\n',' ').replace('  ',' ') + '&quot;, &quot;parameters&quot; : { &quot;id&quot; : &quot;$ID&quot; }'
         else:
             out[q_name] = q
     return json.dumps(out)
