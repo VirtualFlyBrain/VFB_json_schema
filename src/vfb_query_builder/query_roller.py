@@ -601,7 +601,7 @@ class QueryLibrary(QueryLibraryCore):
         # XREFS
 
     def template_2_datasets_wrapper(self):
-        return Clause(MATCH=Template("MATCH (t:Template)<-[depicts]-(tc:Template)-"
+        return Clause(MATCH=Template("MATCH (t:Template)<-[:depicts]-(tc:Template)<-"
                                      "[:in_register_with]-(c:Individual)-[:depicts]"
                                      "->(ai:Individual)-[:has_source]->(ds:DataSet) WHERE t.short_form in $ssf"),
                       WITH="distinct ds",
