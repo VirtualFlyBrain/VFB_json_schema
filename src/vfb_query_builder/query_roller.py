@@ -628,7 +628,7 @@ class QueryLibrary(QueryLibraryCore):
                              q_name='Get JSON for anat_2_ep query',
                              pretty_print=pretty_print)
 
-    def ep_2_anat_query(self, short_form, *args, pretty_print=False):
+    def ep_2_anat_query(self, short_forms, *args, pretty_print=False):
         # columns: anatomy,
         aci = self.anatomy_channel_image()
         # We want images of anat, returned by self.anat_2_ep_wrapper())
@@ -640,7 +640,7 @@ class QueryLibrary(QueryLibraryCore):
         rel.__setattr__('pvar', 'anoni')
 
         return query_builder(query_labels=['Class'],
-                             query_short_forms=[short_form],
+                             query_short_forms=short_forms,
                              clauses=[self.ep_2_anat_wrapper(),
                                       rel,
                                       aci],

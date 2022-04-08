@@ -25,7 +25,7 @@ class QueryRollerTest(unittest.TestCase):
                          query=query, single=False)
 
     def test_ep_2_anat_query(self):
-        query = self.ql.ep_2_anat_query('VFBexp_FBtp0106753',
+        query = self.ql.ep_2_anat_query(['VFBexp_FBtp0106753'],
                                        pretty_print=True,)
 
         print("Testing and printing first result in list only.")
