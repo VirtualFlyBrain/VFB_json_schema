@@ -132,8 +132,8 @@ def roll_min_edge_info(var):
 
 def roll_pub_return(var):
     s = Template("{ core: $core, "
-                 "PubMed: coalesce($v.PMID[0], ''), "
-                 "FlyBase: coalesce($v.FlyBase[0], ''), DOI: coalesce($v.DOI[0], '') }")
+                 "PubMed: coalesce($v.PMID, ''), "
+                 "FlyBase: coalesce($v.FlyBase, ''), DOI: coalesce($v.DOI, '') }")
     return s.substitute(core=roll_min_node_info(var), v=var)
 
 
@@ -361,9 +361,9 @@ class QueryLibraryCore:
     def _set_pub_common_query_elements(self):
         # This is only a function for ease of code editing - places declaration next to where it is used.
         self._pub_return = "{ core: %s, " \
-                           "PubMed: coalesce(p.PMID[0], ''), " \
-                           "FlyBase: coalesce(p.FlyBase[0], ''), " \
-                           "DOI: coalesce(p.DOI[0], '') } " \
+                           "PubMed: coalesce(p.PMID, ''), " \
+                           "FlyBase: coalesce(p.FlyBase, ''), " \
+                           "DOI: coalesce(p.DOI, '') } " \
                            "" % roll_min_node_info("p")
 
         # temp fixes in here for list -> single !
@@ -543,9 +543,9 @@ class QueryLibrary(QueryLibraryCore):
                            q_name='Get JSON for pub'):
         return_clause_hack = ", {" \
                              "title: coalesce(primary.title[0], '') ," \
-                             "PubMed: coalesce(primary.PMID[0], ''), "  \
-                             "FlyBase: coalesce(primary.FlyBase[0], ''), " \
-                             "DOI: coalesce(primary.DOI[0], '') }" \
+                             "PubMed: coalesce(primary.PMID, ''), "  \
+                             "FlyBase: coalesce(primary.FlyBase, ''), " \
+                             "DOI: coalesce(primary.DOI, '') }" \
                              "AS pub_specific_content"
 
         return query_builder(
