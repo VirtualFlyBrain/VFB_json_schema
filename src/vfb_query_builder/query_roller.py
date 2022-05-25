@@ -120,7 +120,7 @@ def roll_min_node_info(var):
     """Rolls core JSON (specifying minimal info about an entity.
     var: the variable name for the entity within this cypher clause."""
     return "{ short_form: %s.short_form, label: coalesce(%s.label,''), " \
-           "iri: %s.iri, types: labels(%s), unique_facets: apoc.coll.sort(coalesce(%s.uniqueFacets, [])), symbol: coalesce(%s.symbol[0], '')} " % (var, var, var, var, var, var)
+           "iri: %s.iri, types: labels(%s), unique_facets: apoc.coll.sort(coalesce(%s.uniqueFacets, [])), symbol: coalesce(([]+%s.symbol)[0], '')} " % (var, var, var, var, var, var)
 
 
 
@@ -132,8 +132,8 @@ def roll_min_edge_info(var):
 
 def roll_pub_return(var):
     s = Template("{ core: $core, "
-                 "PubMed: coalesce($v.PMID[0], ''), "
-                 "FlyBase: coalesce($v.FlyBase[0], ''), DOI: coalesce($v.DOI[0], '') }")
+                 "PubMed: coalesce(([]+$v.PMID)[0], ''), "
+                 "FlyBase: coalesce(([]+$v.FlyBase)[0], ''), DOI: coalesce(([]+$v.DOI)[0], '') }")
     return s.substitute(core=roll_min_node_info(var), v=var)
 
 
@@ -141,13 +141,13 @@ def roll_pub_return(var):
 # For this it helps to contruct return as a dict
 
 def roll_license_return_dict(var):
-    return {'icon': "coalesce(%s.license_logo[0], '')" % var,
-            'link': "coalesce(%s.license_url[0], '')" % var}
+    return {'icon': "coalesce(([]+%s.license_logo)[0], '')" % var,
+            'link': "coalesce(([]+%s.license_url)[0], '')" % var}
 
 
 def roll_dataset_return_dict(var, typ=''):
     return {
-        "link": "coalesce(%s.dataset_link[0], '')" % var,
+        "link": "coalesce(([]+%s.dataset_link)[0], '')" % var,
     }
 
 
@@ -179,8 +179,8 @@ class QueryLibraryCore:
         self.dataset_spec_fields = {
             "link": "coalesce(%s.dataset_link, '')"
         }
-        self.license_spec_fields = {'icon': "coalesce(%s.license_logo[0], '')",
-                                    'link': "coalesce(%s.license_url[0], '')x"
+        self.license_spec_fields = {'icon': "coalesce(([]+%s.license_logo)[0], '')",
+                                    'link': "coalesce(([]+%s.license_url)[0], '')x"
                                     }
 
     def term(self, return_extensions=None):
@@ -202,12 +202,12 @@ class QueryLibraryCore:
         match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:database_cross_reference]-($pvar$labels) "
 
         xr = "CASE WHEN s IS NULL THEN %s ELSE COLLECT" \
-             "({ link_base: coalesce(s.link_base[0], ''), " \
+             "({ link_base: coalesce(([]+s.link_base)[0], ''), " \
              "accession: coalesce(%s, ''), " \
              "link_text: primary.label + ' on ' + s.label, " \
-             "homepage: coalesce(s.homepage[0], ''), " \
-             "site: %s, icon: coalesce(s.link_icon_url[0], ''),  " \
-             "link_postfix: coalesce(s.link_postfix[0], '')}) "  # Should be $pvar$labels not primary, but need sub on WITH!
+             "homepage: coalesce(([]+s.homepage)[0], ''), " \
+             "site: %s, icon: coalesce(([]+s.link_icon_url)[0], ''),  " \
+             "link_postfix: coalesce(([]+s.link_postfix)[0], '')}) "  # Should be $pvar$labels not primary, but need sub on WITH!
         xrs = "END AS self_xref, $v"  # Passing vars
         xrx = "+ self_xref END AS xrefs"
 
@@ -216,7 +216,7 @@ class QueryLibraryCore:
                            % ('[]', 'primary.short_form',
                               roll_min_node_info("s"))),
             WITH='  '.join([xr, xrx]) % ('self_xref',
-                                         'dbx.accession[0]',
+                                         '([]+dbx.accession)[0]',
                                          roll_min_node_info("s")),
             vars=["xrefs"])
 
@@ -270,8 +270,8 @@ class QueryLibraryCore:
 
         self._channel_image_return = "{ channel: %s, imaging_technique: %s," \
                                      "image: { template_channel : %s, template_anatomy: %s," \
-                                     "image_folder: COALESCE(irw.folder[0], ''), " \
-                                     "index: coalesce(apoc.convert.toInteger(irw.index[0]), []) + [] }" \
+                                     "image_folder: COALESCE(([]+irw.folder)[0], ''), " \
+                                     "index: coalesce(apoc.convert.toInteger(([]+irw.index)[0]), []) + [] }" \
                                      "}" % (roll_min_node_info('channel'),
                                             roll_min_node_info('technique'),
                                             roll_min_node_info('template'),
@@ -338,7 +338,7 @@ class QueryLibraryCore:
             "OPTIONAL MATCH (channel:Individual { short_form: pd.channel.short_form})"
             "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
         WITH="collect({ anatomical_type: %s ,"
-             " anatomical_individual: %s, folder: pd.irw.folder[0], "
+             " anatomical_individual: %s, folder: ([]+pd.irw.folder)[0], "
              "center: coalesce (pd.irw.center, []), "
              "index: [] + coalesce (pd.irw.index, []) })"
              " AS template_domains" % (roll_min_node_info("c"),
@@ -350,9 +350,9 @@ class QueryLibraryCore:
             "MATCH (channel:Individual)<-[irw:in_register_with]-"
             "(channel:Individual)-[:depicts]->($pvar$labels)"),
         WITH="{ index: coalesce(apoc.convert.toInteger(irw.index), []) + [], "
-             "extent: irw.extent[0], center: irw.center[0], voxel: irw.voxel[0], "
-             "orientation: coalesce(irw.orientation[0], ''), "
-             "image_folder: coalesce(irw.folder[0],''), "
+             "extent: ([]+irw.extent)[0], center: ([]+irw.center)[0], voxel: ([]+irw.voxel)[0], "
+             "orientation: coalesce(([]+irw.orientation)[0], ''), "
+             "image_folder: coalesce(([]+irw.folder)[0],''), "
              "channel: %s } as template_channel" % roll_min_node_info("channel"),
         vars=["template_channel"])
 
@@ -361,15 +361,15 @@ class QueryLibraryCore:
     def _set_pub_common_query_elements(self):
         # This is only a function for ease of code editing - places declaration next to where it is used.
         self._pub_return = "{ core: %s, " \
-                           "PubMed: coalesce(p.PMID[0], ''), " \
-                           "FlyBase: coalesce(p.FlyBase[0], ''), " \
-                           "DOI: coalesce(p.DOI[0], '') } " \
+                           "PubMed: coalesce(([]+p.PMID)[0], ''), " \
+                           "FlyBase: coalesce(([]+p.FlyBase)[0], ''), " \
+                           "DOI: coalesce(([]+p.DOI)[0], '') } " \
                            "" % roll_min_node_info("p")
 
         # temp fixes in here for list -> single !
-        self._syn_return = "{ label: coalesce(rp.value[0], ''), " \
+        self._syn_return = "{ label: coalesce(([]+rp.value)[0], ''), " \
                             "scope: coalesce(rp.scope, ''), " \
-                            "type: coalesce(rp.has_synonym_type[0],'') } "
+                            "type: coalesce(([]+rp.has_synonym_type)[0],'') } "
 
     def def_pubs(self):
         return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
@@ -542,10 +542,10 @@ class QueryLibrary(QueryLibraryCore):
     def pub_term_info(self, short_form: list, *args, pretty_print=False,
                            q_name='Get JSON for pub'):
         return_clause_hack = ", {" \
-                             "title: coalesce(primary.title[0], '') ," \
-                             "PubMed: coalesce(primary.PMID[0], ''), "  \
-                             "FlyBase: coalesce(primary.FlyBase[0], ''), " \
-                             "DOI: coalesce(primary.DOI[0], '') }" \
+                             "title: coalesce(([]+primary.title)[0], '') ," \
+                             "PubMed: coalesce(([]+primary.PMID)[0], ''), "  \
+                             "FlyBase: coalesce(([]+primary.FlyBase)[0], ''), " \
+                             "DOI: coalesce(([]+primary.DOI)[0], '') }" \
                              "AS pub_specific_content"
 
         return query_builder(
