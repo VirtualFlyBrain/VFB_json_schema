@@ -719,7 +719,8 @@ def term_info_export(escape=True):
                      'dataset_term_info',
                      'license_term_info',
                      'template_term_info',
-                     'pub_term_info']
+                     'pub_term_info',
+                     'dataset_image_query']
 
     out = {}
     for qm in query_methods:
