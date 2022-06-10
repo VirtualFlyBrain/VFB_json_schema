@@ -23,6 +23,11 @@ class QueryRollerTest(unittest.TestCase):
         print("Testing and printing first result in list only.")
         r = self.qw.test(t=self,
                          query=query, single=False)
+        
+    def test_dataset_image_query(self):
+        query=self.ql.dataset_image_query(short_forms=["TrumanWood2018public"])
+        r = self.qw.test(t=self,
+                         query=query, single=False)
 
     def test_ep_2_anat_query(self):
         query = self.ql.ep_2_anat_query(['VFBexp_FBtp0106753'],
