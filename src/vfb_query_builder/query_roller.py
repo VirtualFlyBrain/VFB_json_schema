@@ -700,8 +700,8 @@ class QueryLibrary(QueryLibraryCore):
                              clauses=[self.term(),
                                       self.anatomy_channel_image()],
                              pretty_print=True)
-    
-   def dataset_image_query(self, short_forms: List):
+
+    def dataset_image_query(self, short_forms: List):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Individual'],
                              clauses=[self.term(),
