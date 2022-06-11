@@ -701,13 +701,14 @@ class QueryLibrary(QueryLibraryCore):
                                       self.anatomy_channel_image()],
                              pretty_print=True)
 
-    def dataset_image_query(self, short_forms: List):
+    def dataset_image_query(self, short_forms: List, *args, pretty_print=False):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Individual'],
                              clauses=[self.term(),
                                       self.channel_image(),
                                       self.image_type()],
-                             pretty_print=True)
+                             q_name='Get JSON for dataset_image query',
+                             pretty_print=pretty_print)
 
 def term_info_export(escape=True):
     # Generate a JSON with TermInto queries
@@ -721,7 +722,6 @@ def term_info_export(escape=True):
                      'template_term_info',
                      'pub_term_info',
                      'dataset_image_query']
-
     out = {}
     for qm in query_methods:
         # This whole approach feels a bit hacky...
