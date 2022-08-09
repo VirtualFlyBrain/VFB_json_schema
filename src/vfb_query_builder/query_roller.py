@@ -466,7 +466,6 @@ class QueryLibrary(QueryLibraryCore):
                                       self.relationships(),
                                       self.xrefs(),
                                       self.channel_image(),
-                                      self.related_individuals(),
                                       self.pub_syn(),
                                       self.def_pubs()
                                       ],
