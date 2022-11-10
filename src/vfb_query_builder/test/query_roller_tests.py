@@ -61,7 +61,7 @@ class QueryRollerTest(unittest.TestCase):
         for line in ecore:
             xmi.append(line.decode('utf-8'))
             if "Get JSON for " in line.decode('utf-8'):
-                model.append(line.decode('utf-8').split('"')[3])
+                model.append(line.decode('utf-8'))
         for query in queries:
             print(query)
             print(newquery(queries[query]))
@@ -83,7 +83,7 @@ class QueryRollerTest(unittest.TestCase):
         for line in ecore:
             xmi.append(line.decode('utf-8'))
             if "Get JSON for " in line.decode('utf-8'):
-                model.append(line.decode('utf-8').split('"')[3])
+                model.append(line.decode('utf-8'))
         for query in queries:
             print(query)
             print(newquery(queries[query]))
