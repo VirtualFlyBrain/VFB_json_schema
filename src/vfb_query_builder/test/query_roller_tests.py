@@ -52,6 +52,51 @@ class QueryRollerTest(unittest.TestCase):
                             break
         print('New vfb.xmi')
         print(''.join(xmi))
-                            
+
+        # extract out the cypher queries from the VFBconnect master branch
+        ecore=urllib.request.urlopen("https://github.com/VirtualFlyBrain/VFB_connect/raw/master/src/vfb_connect/resources/VFB_TermInfo_queries.json")
+        model = []
+        xmi = []
+        for line in ecore:
+            xmi.append(line.decode('utf-8'))
+            if "Get JSON for " in line.decode('utf-8'):
+                model.append(line.decode('utf-8').split('"')[3])
+        for query in queries:
+            print(query)
+            print(newquery(queries[query]))
+            for cypher in model:
+                if query in cypher:
+                    print(oldquery(cypher))
+                    print(get_edits_string(cypher, queries[query]))
+                    for index, line in enumerate(xmi):
+                        if cypher in line:
+                            xmi[index] = line.replace(cypher, queries[query])
+                            break
+        print('New VFB_TermInfo_queries.json')
+        print(''.join(xmi))
+
+        # extract out the cypher queries from the VFBconnect master branch
+        ecore=urllib.request.urlopen("https://github.com/VirtualFlyBrain/VFB_connect/raw/master/src/vfb_connect/resources/VFB_results_single_input.json")
+        model = []
+        xmi = []
+        for line in ecore:
+            xmi.append(line.decode('utf-8'))
+            if "Get JSON for " in line.decode('utf-8'):
+                model.append(line.decode('utf-8').split('"')[3])
+        for query in queries:
+            print(query)
+            print(newquery(queries[query]))
+            for cypher in model:
+                if query in cypher:
+                    print(oldquery(cypher))
+                    print(get_edits_string(cypher, queries[query]))
+                    for index, line in enumerate(xmi):
+                        if cypher in line:
+                            xmi[index] = line.replace(cypher, queries[query])
+                            break
+        print('New VFB_results_single_input.json')
+        print(''.join(xmi))
+
+
 if __name__ == '__main__':
     unittest.main()
