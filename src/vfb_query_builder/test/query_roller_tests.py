@@ -30,7 +30,7 @@ class QueryRollerTest(unittest.TestCase):
                     result += (red(old[code[1]:code[2]]) + green(new[code[3]:code[4]]))
             return result
         
-        queries = json.loads(term_info_export())
+        queries = json.loads(term_info_export(escape='xmi'))
         # extract out the cypher queries from the ecore vfb.xmi file into model list
         ecore=urllib.request.urlopen("https://github.com/VirtualFlyBrain/geppetto-vfb/raw/master/model/vfb.xmi")
         model = []
@@ -53,6 +53,7 @@ class QueryRollerTest(unittest.TestCase):
         print('New vfb.xmi')
         print(''.join(xmi))
 
+        queries = json.loads(term_info_export(escape='json'))
         # extract out the cypher queries from the VFBconnect master branch
         ecore=urllib.request.urlopen("https://github.com/VirtualFlyBrain/VFB_connect/raw/master/src/vfb_connect/resources/VFB_TermInfo_queries.json")
         model = []

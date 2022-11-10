@@ -702,7 +702,7 @@ class QueryLibrary(QueryLibraryCore):
                                       self.anatomy_channel_image()],
                              pretty_print=True)
 
-def term_info_export(escape=True):
+def term_info_export(escape='xmi'):
     # Generate a JSON with TermInto queries
     ql = QueryLibrary()
     query_methods = ['anatomical_ind_term_info',
@@ -720,8 +720,13 @@ def term_info_export(escape=True):
         qf = getattr(ql, qm)
         q_name = qf.__kwdefaults__['q_name']
         q = qf(short_form='[$id]')
-        if escape:
+        if escape == 'xmi' or escape == True:
             out[q_name] = '&quot;statement&quot;: &quot;' + q.replace('  ',' ').replace('<','&lt;').replace('\n',' ').replace('  ',' ') + '&quot;, &quot;parameters&quot; : { &quot;id&quot; : &quot;$ID&quot; }'
         else:
-            out[q_name] = q
+            if escape == 'json':
+                out[q_name] = '"' + q_name + '": "' + q.replace('  ',' ').replace('\n',' ').replace('  ',' ') + '",'
+            else:
+                out[q_name] = q
     return json.dumps(out)
+
+
