@@ -724,7 +724,7 @@ def term_info_export(escape='xmi'):
             out[q_name] = '&quot;statement&quot;: &quot;' + q.replace('  ',' ').replace('<','&lt;').replace('\n',' ').replace('  ',' ') + '&quot;, &quot;parameters&quot; : { &quot;id&quot; : &quot;$ID&quot; }'
         else:
             if escape == 'json':
-                out[q_name] = '"' + q_name + '": "' + q.replace('  ',' ').replace('\n',' ').replace('  ',' ') + '",'
+                out[q_name] = '"' + q_name + '": "' + q.replace('  ',' ').replace('\n',' ').replace('  ',' ').replace('[$id]',"['$ID']") + '",'
             else:
                 out[q_name] = q
     return json.dumps(out)
