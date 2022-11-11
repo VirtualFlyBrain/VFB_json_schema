@@ -617,7 +617,7 @@ class QueryLibrary(QueryLibraryCore):
                       node_vars=['ds'],
                       RETURN="%s as dataset" % (roll_min_node_info('ds')))
 
-    def anat_2_ep_query(self, short_forms, *args, pretty_print=False):
+    def anat_2_ep_query(self, short_forms, *args, pretty_print=False, q_name='Get JSON for anat_2_ep query'):
         # we want images of eps (ep, returned by self.anat_2_ep_wrapper())
         aci = self.anatomy_channel_image()
         aci.__setattr__('pvar', 'ep')
@@ -626,10 +626,10 @@ class QueryLibrary(QueryLibraryCore):
                              query_short_forms=short_forms,
                              clauses=[self.anat_2_ep_wrapper(),
                                       aci],
-                             q_name='Get JSON for anat_2_ep query',
+                             q_name=q_name,
                              pretty_print=pretty_print)
 
-    def ep_2_anat_query(self, short_forms, *args, pretty_print=False):
+    def ep_2_anat_query(self, short_forms, *args, pretty_print=False, q_name='Get JSON for anat_2_ep query'):
         # columns: anatomy,
         aci = self.anatomy_channel_image()
         # We want images of anat, returned by self.anat_2_ep_wrapper())
@@ -645,7 +645,7 @@ class QueryLibrary(QueryLibraryCore):
                              clauses=[self.ep_2_anat_wrapper(),
                                       rel,
                                       aci],
-                             q_name='Get JSON for ep_2_anat query',
+                             q_name=q_name,
                              pretty_print=pretty_print)
 
     def template_2_datasets_query(self, short_form):
