@@ -729,4 +729,23 @@ def term_info_export(escape='xmi'):
                 out[q_name] = q
     return json.dumps(out)
 
+def single_input_export(escape='json'):
+    # Generate a JSON with TermInto queries
+    ql = QueryLibrary()
+    query_methods = ['ep_2_anat_query']
+
+    out = {}
+    for qm in query_methods:
+        # This whole approach feels a bit hacky...
+        qf = getattr(ql, qm)
+        q_name = qf.__kwdefaults__['q_name']
+        q = qf(short_form='[$id]')
+        if escape == 'xmi' or escape == True:
+            out[q_name] = '&quot;statement&quot;: &quot;' + q.replace('  ',' ').replace('<','&lt;').replace('\n',' ').replace('  ',' ') + '&quot;, &quot;parameters&quot; : { &quot;id&quot; : &quot;$ID&quot; }'
+        else:
+            if escape == 'json':
+                out[q_name] = '  "' + q_name + '": "' + q.replace('  ',' ').replace('\n',' ').replace('  ',' ').replace('[$id]',"['$ID']").replace('<','&lt;').replace('>','&gt;') + '",'
+            else:
+                out[q_name] = q
+    return json.dumps(out)
 
