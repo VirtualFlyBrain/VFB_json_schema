@@ -259,6 +259,15 @@ class QueryLibraryCore:
 
     # IMAGES
 
+    def anat_cluster_dataset(self):
+        return Clause(
+            MATCH=Template("MATCH ($pvar$labels)<-[:composed_primarily_of]-(c:Cluster)" \
+                           "-[:has_source]->(ds:scRNAseq_DataSet)"),
+            WITH="%s AS cluster, %s AS dataset" 
+                 "" % (roll_min_node_info("c"), roll_min_node_info("ds")),
+            vars=["cluster, dataset"]
+        )
+
     def _set_image_query_common_elements(self):
         self._channel_image_match = "<-[:depicts]-" \
                                     "(channel:Individual)-[irw:in_register_with]" \
@@ -700,6 +709,12 @@ class QueryLibrary(QueryLibraryCore):
                              query_labels=['Class', 'Anatomy'],
                              clauses=[self.term(),
                                       self.anatomy_channel_image()],
+                             pretty_print=True)
+
+    def anat_scRNAseq_query(self, short_forms: List):
+        return query_builder(query_short_forms=short_forms,
+                             query_labels=['Class', 'Anatomy'],
+                             clauses=[self.term(), self.anat_cluster_dataset()],
                              pretty_print=True)
 
 def term_info_export(escape=True):

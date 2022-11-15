@@ -50,6 +50,12 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query, single=False)
 
+    def test_anat_scRNAseq_query(self):
+        query = self.ql.anat_scRNAseq_query(short_forms=['FBbt_00048152', 'FBbt_00048274'])
+        print("Testing and printing first result in list only.")
+        r = self.qw.test(t=self,
+                         query=query, single=False)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
