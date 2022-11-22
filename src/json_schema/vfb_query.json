@@ -15,6 +15,15 @@
     "cluster": {
       "$ref": "mod.json#definitions/minimal_entity_info"
     },
+    "gene": {
+      "$ref": "mod.json#definitions/minimal_entity_info"
+    },
+    "expression_level": {
+      "type" : "number"
+    },
+    "expression_extent": {
+      "type" : "number"
+    },
     "dataset_counts":  {
       "$ref": "mod.json#definitions/dataset_counts"
     },

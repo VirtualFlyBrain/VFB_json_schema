@@ -22,7 +22,7 @@ class Clause:
         (default specification of pvar).  This should have a return statement specifying how
         primary should be unpacked into a datastructure in  the return statement.
         2. Subsequent clauses are OPTIONAL MATCH statements, they may return a
-        3. Any MATCH statement my consist of multiple whole cypher clauses (MATCH  + WITH)
+        3. Any MATCH statement may consist of multiple whole cypher clauses (MATCH  + WITH)
           In this case, each internal WITH clause must have a $v for interpolation of
           accumulated vars
 
@@ -261,11 +261,28 @@ class QueryLibraryCore:
 
     def anat_cluster_dataset(self):
         return Clause(
-            MATCH=Template("MATCH ($pvar$labels)<-[:composed_primarily_of]-(c:Cluster)" \
+            MATCH=Template("MATCH ($pvar$labels)<-[:composed_primarily_of]-(c:Cluster)"
                            "-[:has_source]->(ds:scRNAseq_DataSet)"),
             WITH="%s AS cluster, %s AS dataset" 
                  "" % (roll_min_node_info("c"), roll_min_node_info("ds")),
             vars=["cluster, dataset"]
+        )
+
+    def cluster_anat(self):
+        return Clause(
+            MATCH=Template("MATCH (a:Anatomy)<-[:composed_primarily_of]-($pvar$labels)"),
+            WITH="%s AS Anatomy" 
+                 "" % roll_min_node_info("a"),
+            vars=["Anatomy"]
+        )
+
+    def cluster_expression(self):
+        return Clause(
+            MATCH=Template("MATCH ($pvar$labels)-[e:expresses]->(g:Gene)"),
+            WITH="e.expression_level[0] as expression_level, "
+                 "e.expression_extent[0] as expression_extent, "
+                 "%s AS gene" % (roll_min_node_info("g")),
+            vars=["expression_level", "expression_extent", "gene"]
         )
 
     def _set_image_query_common_elements(self):
@@ -715,6 +732,12 @@ class QueryLibrary(QueryLibraryCore):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Class', 'Anatomy'],
                              clauses=[self.term(), self.anat_cluster_dataset()],
+                             pretty_print=True)
+
+    def cluster_expression_query(self, short_forms: List):
+        return query_builder(query_short_forms=short_forms,
+                             query_labels=['Class', 'Anatomy'],
+                             clauses=[self.term(), self.cluster_expression(), self.cluster_anat()],
                              pretty_print=True)
 
 def term_info_export(escape=True):

@@ -2,6 +2,7 @@
 
 VFB [json schema spec](https://virtualflybrain.github.io/VFB_json_schema/doc/schema_doc.html#term) + code for rolling queries producing VFB json schema + related integration tests
 
+
 | PDB | Staging  | Dev  | P2 |
 |-------------------|-------------------|-------------------| --- |
 | [![Build1][1]][5] | [![Build2][2]][6] | [![Build3][3]][7] | [![Build4][4]][8]
@@ -15,3 +16,8 @@ VFB [json schema spec](https://virtualflybrain.github.io/VFB_json_schema/doc/sch
 [7]: https://github.com/VirtualFlyBrain/VFB_json_schema/actions/workflows/PDB-dev_schema_tests.yml
 [8]: https://github.com/VirtualFlyBrain/VFB_json_schema/actions/workflows/PipelinePDB_schema_tests.yml
 
+## How to add a query:
+
+Queries are composed of clauses. Clauses are encoded by functions in vfb_query_builder.query_roller.QueryLibraryCore.  A clause is constructed from 3 arguments: 
+
+Queries typically start with a 'term'
