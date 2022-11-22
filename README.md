@@ -18,6 +18,25 @@ VFB [json schema spec](https://virtualflybrain.github.io/VFB_json_schema/doc/sch
 
 ## How to add a query:
 
-Queries are composed of clauses. Clauses are encoded by functions in vfb_query_builder.query_roller.QueryLibraryCore.  A clause is constructed from 3 arguments: 
+Queries are composed of clauses. Clauses are encoded by functions in vfb_query_builder.query_roller.QueryLibraryCore.  There main arguments are used to construct a clause (see pydoc for full args):
+ MATCH : A Match statement - it is generally safer to use OPTIONAL MATCH here in case no info is returned.
+ WITH: defines what goes in the WITH statement that follows.  This might be used to define simple literals (e.g expression_level) or blobs of JSON - most typically minimal node info.
+ vars: list of vars from the with clause to pass along in subsequent with clauses and into the return clause.
 
-Queries typically start with a 'term'
+Queries typically start with a 'term' clause.
+
+To add a new query: 
+
+1. Add new clauses to query_roller.QueryLibraryCore
+
+e.g. 
+
+
+
+2. Add any new keys specified in vars to the relevant JSON schema doc.
+
+3. Add a query to the query_library using the querybuilder function, e.g. 
+
+4. Add a new test to the relevant test library, 
+
+e.g.   
