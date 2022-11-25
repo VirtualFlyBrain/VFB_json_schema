@@ -271,9 +271,9 @@ class QueryLibraryCore:
     def cluster_anat(self):
         return Clause(
             MATCH=Template("MATCH (a:Anatomy)<-[:composed_primarily_of]-($pvar$labels)"),
-            WITH="%s AS Anatomy" 
+            WITH="%s AS anatomy" 
                  "" % roll_min_node_info("a"),
-            vars=["Anatomy"]
+            vars=["anatomy"]
         )
 
     def cluster_expression(self):
@@ -736,7 +736,7 @@ class QueryLibrary(QueryLibraryCore):
 
     def cluster_expression_query(self, short_forms: List):
         return query_builder(query_short_forms=short_forms,
-                             query_labels=['Class', 'Anatomy'],
+                             query_labels=['Individual', 'Cluster'],
                              clauses=[self.term(), self.cluster_expression(), self.cluster_anat()],
                              pretty_print=True)
 
