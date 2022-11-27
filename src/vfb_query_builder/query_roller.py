@@ -259,13 +259,14 @@ class QueryLibraryCore:
 
     # IMAGES
 
-    def anat_cluster_dataset(self):
+    def anat_cluster_dataset_pubs(self):
         return Clause(
             MATCH=Template("MATCH ($pvar$labels)<-[:composed_primarily_of]-(c:Cluster)"
-                           "-[:has_source]->(ds:scRNAseq_DataSet)"),
-            WITH="%s AS cluster, %s AS dataset" 
-                 "" % (roll_min_node_info("c"), roll_min_node_info("ds")),
-            vars=["cluster, dataset"]
+                           "-[:has_source]->(ds:scRNAseq_DataSet)"
+                           "OPTIONAL MATCH (ds)-[:has_reference]->(p:pub)"),
+            WITH="%s AS cluster, %s AS dataset, COLLECT(%s) AS pubs" 
+                 "" % (roll_min_node_info("c"), roll_min_node_info("ds"), roll_pub_return("p")),
+            vars=["cluster, dataset, pubs"]
         )
 
     def cluster_anat(self):
@@ -731,7 +732,7 @@ class QueryLibrary(QueryLibraryCore):
     def anat_scRNAseq_query(self, short_forms: List):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Class', 'Anatomy'],
-                             clauses=[self.term(), self.anat_cluster_dataset()],
+                             clauses=[self.term(), self.anat_cluster_dataset_pubs()],
                              pretty_print=True)
 
     def cluster_expression_query(self, short_forms: List):
