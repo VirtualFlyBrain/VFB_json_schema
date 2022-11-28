@@ -720,6 +720,7 @@ class QueryLibrary(QueryLibraryCore):
                              clauses=[self.term(),
                                       self.channel_image(),
                                       self.image_type()],
+                             q_name='Get JSON for anat image query',
                              pretty_print=True)
 
     def anat_query(self, short_forms: List):
@@ -727,18 +728,21 @@ class QueryLibrary(QueryLibraryCore):
                              query_labels=['Class', 'Anatomy'],
                              clauses=[self.term(),
                                       self.anatomy_channel_image()],
+                             q_name='Get JSON for anat query',
                              pretty_print=True)
 
     def anat_scRNAseq_query(self, short_forms: List):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Class', 'Anatomy'],
                              clauses=[self.term(), self.anat_cluster_dataset_pubs()],
+                             q_name='Get JSON for anat scRNAseq query',
                              pretty_print=True)
 
     def cluster_expression_query(self, short_forms: List):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Individual', 'Cluster'],
                              clauses=[self.term(), self.cluster_expression(), self.cluster_anat()],
+                             q_name='Get JSON for cluster expression query',
                              pretty_print=True)
 
 def term_info_export(escape=True):
