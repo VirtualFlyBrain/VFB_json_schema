@@ -19,7 +19,7 @@ class TestWrapper:
         base = 'file://' + pwdl + '/json_schema/'
         self.V = get_validator(pwdl + "/json_schema/" + schema,
                                base_uri=base)
-        self.nc = Neo4jConnect('http://pdb.virtualflybrain.org', 'neo4j', 'vfb')
+        self.nc = Neo4jConnect('http://pdb.virtualflybrain.org', 'neo4j', 'neo4j')
 
     def test_content(self, t, d, hard_fail = False):
         # test if dict?
