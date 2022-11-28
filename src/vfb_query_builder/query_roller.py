@@ -261,8 +261,8 @@ class QueryLibraryCore:
 
     def anat_cluster_dataset_pubs(self):
         return Clause(
-            MATCH=Template("MATCH ($pvar$labels)<-[:composed_primarily_of]-(c:Cluster)"
-                           "-[:has_source]->(ds:scRNAseq_DataSet)"
+            MATCH=Template("MATCH ($pvar$labels)<-[:composed_primarily_of]-(c:Cluster:Individual)"
+                           "-[:has_source]->(ds:scRNAseq_DataSet:Individual)"
                            "OPTIONAL MATCH (ds)-[:has_reference]->(p:pub)"),
             WITH="%s AS cluster, %s AS dataset, COLLECT(%s) AS pubs" 
                  "" % (roll_min_node_info("c"), roll_min_node_info("ds"), roll_pub_return("p")),
@@ -271,7 +271,7 @@ class QueryLibraryCore:
 
     def cluster_anat(self):
         return Clause(
-            MATCH=Template("MATCH (a:Anatomy)<-[:composed_primarily_of]-($pvar$labels)"),
+            MATCH=Template("MATCH (a:Anatomy:Class)<-[:composed_primarily_of]-($pvar$labels)"),
             WITH="%s AS anatomy" 
                  "" % roll_min_node_info("a"),
             vars=["anatomy"]
@@ -279,7 +279,7 @@ class QueryLibraryCore:
 
     def cluster_expression(self):
         return Clause(
-            MATCH=Template("MATCH ($pvar$labels)-[e:expresses]->(g:Gene)"),
+            MATCH=Template("MATCH ($pvar$labels)-[e:expresses]->(g:Gene:Class)"),
             WITH="e.expression_level[0] as expression_level, "
                  "e.expression_extent[0] as expression_extent, "
                  "%s AS gene" % (roll_min_node_info("g")),
