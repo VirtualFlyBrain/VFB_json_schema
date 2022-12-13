@@ -80,6 +80,20 @@ class TermInfoRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query)
 
+    def test_individual_hidden_relationships(self):
+        query = query_builder(query_labels=["Individual"],
+                              clauses=[self.ql.term(),
+                                       self.ql.relationships()],
+                              query_short_forms=['FBlc0003917'])
+        r = self.qw.test(t=self,
+                         query=query)
+
+        # ensure relationship edges with 'hide_in_terminfo = TRUE' are hidden in term info
+        relationships = r[0]["relationships"]
+        self.assertEqual(2, len(relationships))
+        expresses_relations = [rel for rel in relationships if rel["relation"]["label"] == "expresses"]
+        self.assertEqual(0, len(expresses_relations))
+
     def test_individual_parents(self):
         query = query_builder(query_labels=["Individual"],
                               clauses=[self.ql.term(),
