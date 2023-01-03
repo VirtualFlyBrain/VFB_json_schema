@@ -1,5 +1,4 @@
 venv/
 .idea/
 .DS_Store
-src/vfb_query_builder/__pycache__/__init__.cpython-39.pyc
 *.pyc
