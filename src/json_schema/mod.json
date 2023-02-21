@@ -260,6 +260,21 @@
         "image_folder": {
           "type": "string"
         },
+        "image_nrrd": {
+          "type": "string"
+        },
+        "image_thumbnail": {
+          "type": "string"
+        },
+        "image_swc": {
+          "type": "string"
+        },
+        "image_obj": {
+          "type": "string"
+        },
+        "image_wlz": {
+          "type": "string"
+        },
         "channel": {
           "$ref": "#/definitions/minimal_entity_info"
         }
