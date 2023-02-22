@@ -828,7 +828,9 @@ def term_info_export(escape='xmi'):
 def single_input_export(escape='json'):
     # Generate a JSON with TermInto queries
     ql = QueryLibrary()
-    query_methods = ['ep_2_anat_query']
+    query_methods = ['ep_2_anat_query',
+                     'template_2_datasets_query',
+                     'neuron_region_connectivity_query']
 
     out = {}
     for qm in query_methods:
