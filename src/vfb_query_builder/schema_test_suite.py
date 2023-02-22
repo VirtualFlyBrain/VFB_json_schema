@@ -54,7 +54,7 @@ def validate(validator, instance):
         return False
 
 
-def recurse_through_errors(es, level = 0):
+def recurse_through_errors(es, level=0):
     """Recurse through errors posting message 
     and schema path until context is empty"""
     # Assuming blank context is a sufficient escape clause here.

@@ -249,6 +249,34 @@ class QueryLibraryCore:
                                                        % (roll_min_edge_info("r"),
                                                           roll_min_node_info("o"))))
 
+    def related_individuals_neuron_region(self):
+        return (Clause(vars=["synapse_counts, object"],
+                       node_vars=["target"],
+                       MATCH=Template(
+                           "MATCH "
+                           "(target:Individual)<-[r:has_presynaptic_terminals_in|"
+                           "has_post_synaptic_terminal_in]-($pvar) "
+                           "WITH DISTINCT collect(properties(r)) + {} as props, target, $v "),
+                       WITH="apoc.map.removeKeys(apoc.map.merge(props[0], props[1]),"
+                             "['iri', 'short_form', 'Related', 'label', 'type']) "
+                             "as synapse_counts, %s as object, target  "
+                             "" % roll_min_node_info("target")))  # o -> images, parent classes
+
+
+    def related_individuals_neuron_neuron(self): return (Clause(vars=["synapse_counts, object"],
+                                                                node_vars=["oi"],
+                                                                MATCH=Template(
+                                                      "MATCH (oi:Individual)-[r:synapsed_to]-(primary:Individual) "
+                                                      "WHERE exists(r.weight) AND r.weight[0] > 1 "
+                                                      "WITH $v, oi "
+                                                      "OPTIONAL MATCH (oi)<-[down:synapsed_to]-(primary) "
+                                                      "WITH down, oi, $v "
+                                                      "OPTIONAL MATCH (primary)<-[up:synapsed_to]-(oi) "),
+                                                  WITH="{ downstream: [coalesce(down.weight[0],0)], "
+                                                       "upstream:[coalesce(up.weight[0],0)] } as synapse_counts, "
+                                                       "%s as object, oi"
+                                                       % roll_min_node_info("oi")))  # oi -> images, parent classes
+
     def ep_stage(self):
         return Clause(
             MATCH=Template("OPTIONAL MATCH ($pvar$labels)-[r:Related]->(o:FBdv)"),
@@ -332,8 +360,8 @@ class QueryLibraryCore:
         return Clause(
             MATCH=Template("OPTIONAL MATCH ($pvar)-[:INSTANCEOF]->(typ:Class) "),
             WITH="CASE WHEN typ is null THEN [] "
-                 "ELSE collect (%s) END AS types" % roll_min_node_info('typ'),
-        vars=["types"])
+                 "ELSE collect (%s) END AS parents" % roll_min_node_info('typ'),
+            vars=["parents"])
 
     def anatomy_channel_image(self):
 
@@ -678,6 +706,28 @@ class QueryLibrary(QueryLibraryCore):
                              q_name=q_name,
                              pretty_print=pretty_print)
 
+    def neuron_region_connectivity_query(self, short_form):
+        aci = self.channel_image()
+        aci.__setattr__('pvar', 'target')
+        parents = self.parents()
+        parents.__setattr__('pvar', 'target')
+        return query_builder(query_short_forms=[short_form],
+                             clauses=[self.term(),  # Not needed?
+                                      self.related_individuals_neuron_region(),
+                                      parents,
+                                      aci])
+
+    def neuron_neuron_connectivity_query(self, short_form):
+        ci = self.channel_image()
+        ci.__setattr__('pvar', 'oi')
+        parents = self.parents()
+        parents.__setattr__('pvar', 'oi')
+        return query_builder(query_short_forms=[short_form],
+                             clauses=[self.term(),  # Not needed?
+                                      self.related_individuals_neuron_neuron(),
+                                      parents,
+                                      ci])
+
     def template_2_datasets_query(self, short_form):
         aci = self.anatomy_channel_image()
         aci.__setattr__('pvar', 'ds')
@@ -795,3 +845,40 @@ def single_input_export(escape='json'):
                 out[q_name] = q
     return json.dumps(out)
 
+def results_query_single_input_export(escape=True):
+    # Generate a JSON with TermInto queries
+    ql = QueryLibrary()
+    query_methods = ['ep_2_anat_query',
+                     'template_2_datasets_query',
+                     'neuron_region_connectivity_query']
+
+    out = {}
+    for qm in query_methods:
+        # This whole approach feels a bit hacky...
+        qf = getattr(ql, qm)
+        q_name = qm
+        q = qf(short_form=['$ID'])
+        if escape:
+            out[q_name] = saxutils.escape(q)
+        else:
+            out[q_name] = q
+    return json.dumps(out)
+
+def results_query_multi_input_export(escape=True):
+    # Generate a JSON with TermInto queries
+    ql = QueryLibrary()
+    query_methods = ['anat_2_ep_query',
+                     'anat_image_query',
+                     'anat_query']
+
+    out = {}
+    for qm in query_methods:
+        # This whole approach feels a bit hacky...
+        qf = getattr(ql, qm)
+        q_name = qm
+        q = qf(short_forms=['$ID'])
+        if escape:
+            out[q_name] = saxutils.escape(q)
+        else:
+            out[q_name] = q
+    return json.dumps(out)

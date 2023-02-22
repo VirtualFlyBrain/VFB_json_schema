@@ -56,12 +56,17 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query, single=False)
 
+    def test_neuron_region_connectivity_query(self):
+        query = self.ql.neuron_region_connectivity_query('VFB_jrchjtdr')
+        print("Testing and printing first result in list only.")
+        r = self.qw.test(t=self,
+                         query=query, single=False)
+
     def test_cluster_expression(self):
         query = self.ql.cluster_expression_query(short_forms=['FBlc0003890', 'FBlc0003882'])
         print("Testing and printing first result in list only.")
         r = self.qw.test(t=self,
                          query=query, single=False)
-
 
 
 if __name__ == '__main__':
