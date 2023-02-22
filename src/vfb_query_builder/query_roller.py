@@ -646,7 +646,7 @@ class QueryLibrary(QueryLibraryCore):
                       node_vars=['ds'],
                       RETURN="%s as dataset" % (roll_min_node_info('ds')))
 
-    def anat_2_ep_query(self, short_forms, *args, pretty_print=False):
+    def anat_2_ep_query(self, short_forms, *args, pretty_print=False, q_name='Get JSON for anat_2_ep query'):
         # we want images of eps (ep, returned by self.anat_2_ep_wrapper())
         aci = self.anatomy_channel_image()
         aci.__setattr__('pvar', 'ep')
@@ -655,10 +655,10 @@ class QueryLibrary(QueryLibraryCore):
                              query_short_forms=short_forms,
                              clauses=[self.anat_2_ep_wrapper(),
                                       aci],
-                             q_name='Get JSON for anat_2_ep query',
+                             q_name=q_name,
                              pretty_print=pretty_print)
 
-    def ep_2_anat_query(self, short_forms, *args, pretty_print=False):
+    def ep_2_anat_query(self, short_forms, *args, pretty_print=False, q_name='Get JSON for ep_2_anat query'):
         # columns: anatomy,
         aci = self.anatomy_channel_image()
         # We want images of anat, returned by self.anat_2_ep_wrapper())
@@ -674,7 +674,7 @@ class QueryLibrary(QueryLibraryCore):
                              clauses=[self.ep_2_anat_wrapper(),
                                       rel,
                                       aci],
-                             q_name='Get JSON for ep_2_anat query',
+                             q_name=q_name,
                              pretty_print=pretty_print)
 
     def template_2_datasets_query(self, short_form):
@@ -747,7 +747,7 @@ class QueryLibrary(QueryLibraryCore):
                              q_name='Get JSON for cluster expression query',
                              pretty_print=True)
 
-def term_info_export(escape=True):
+def term_info_export(escape='xmi'):
     # Generate a JSON with TermInto queries
     ql = QueryLibrary()
     query_methods = ['anatomical_ind_term_info',
@@ -765,8 +765,32 @@ def term_info_export(escape=True):
         qf = getattr(ql, qm)
         q_name = qf.__kwdefaults__['q_name']
         q = qf(short_form='[$id]')
-        if escape:
+        if escape == 'xmi' or escape == True:
             out[q_name] = '&quot;statement&quot;: &quot;' + q.replace('  ',' ').replace('<','&lt;').replace('\n',' ').replace('  ',' ') + '&quot;, &quot;parameters&quot; : { &quot;id&quot; : &quot;$ID&quot; }'
         else:
-            out[q_name] = q
+            if escape == 'json':
+                out[q_name] = '  "' + q_name + '": "' + q.replace('  ',' ').replace('\n',' ').replace('  ',' ').replace('[$id]',"['$ID']").replace('<','&lt;').replace('>','&gt;') + '",'
+            else:
+                out[q_name] = q
     return json.dumps(out)
+
+def single_input_export(escape='json'):
+    # Generate a JSON with TermInto queries
+    ql = QueryLibrary()
+    query_methods = ['ep_2_anat_query']
+
+    out = {}
+    for qm in query_methods:
+        # This whole approach feels a bit hacky...
+        qf = getattr(ql, qm)
+        q_name = qf.__kwdefaults__['q_name']
+        q = qf(short_forms='[$id]')
+        if escape == 'xmi' or escape == True:
+            out[q_name] = '&quot;statement&quot;: &quot;' + q.replace('  ',' ').replace('<','&lt;').replace('\n',' ').replace('  ',' ') + '&quot;, &quot;parameters&quot; : { &quot;id&quot; : &quot;$ID&quot; }'
+        else:
+            if escape == 'json':
+                out[q_name] = '  "' + q_name + '": "' + q.replace('  ',' ').replace('\n',' ').replace('  ',' ').replace('[$id]',"['$ID']").replace('<','&lt;').replace('>','&gt;') + '",'
+            else:
+                out[q_name] = q
+    return json.dumps(out)
+
