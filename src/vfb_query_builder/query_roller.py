@@ -205,9 +205,10 @@ class QueryLibraryCore:
              "({ link_base: coalesce(([]+s.link_base)[0], ''), " \
              "accession: coalesce(%s, ''), " \
              "link_text: primary.label + ' on ' + s.label, " \
-             "homepage: coalesce(([]+s.homepage)[0], ''), " \
-             "site: %s, icon: coalesce(([]+s.link_icon_url)[0], ''),  " \
-             "link_postfix: coalesce(([]+s.link_postfix)[0], '')}) "  # Should be $pvar$labels not primary, but need sub on WITH!
+             "homepage: coalesce(s.homepage[0], ''), " \
+             "is_data_source: coalesce(s.is_data_source, False), " \
+             "site: %s, icon: coalesce(s.link_icon_url[0], ''),  " \
+             "link_postfix: coalesce(s.link_postfix, '')}) "  # Should be $pvar$labels not primary, but need sub on WITH!
         xrs = "END AS self_xref, $v"  # Passing vars
         xrx = "+ self_xref END AS xrefs"
 

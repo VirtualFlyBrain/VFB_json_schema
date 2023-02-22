@@ -288,6 +288,10 @@
           "description": "Minimal information about at third party site",
           "type": "object",
           "$ref": "#/definitions/minimal_entity_info"
+        },
+        "is_data_source": {
+          "description": "Boolean that distinguishes data sources from data re-users.",
+          "type": "boolean"
         }
       }
     },

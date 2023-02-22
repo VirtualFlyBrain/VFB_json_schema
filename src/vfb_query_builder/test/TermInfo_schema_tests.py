@@ -76,7 +76,7 @@ class TermInfoRollerTest(unittest.TestCase):
         query = query_builder(query_labels=["Individual"],
                               clauses=[self.ql.term(),
                                        self.ql.relationships()],
-                              query_short_forms=['VFB_00011179'])
+                              query_short_forms=['VFB_jrchjte4'])
         r = self.qw.test(t=self,
                          query=query)
 
