@@ -66,7 +66,7 @@ class QueryRollerTest(unittest.TestCase):
             print(query)
             print(newquery(queries[query]))
             for cypher in model:
-                if query in cypher:
+                if "'"+query+"'" in cypher:
                     print(oldquery(cypher))
                     print(get_edits_string(cypher, queries[query]))
                     for index, line in enumerate(xmi):
@@ -89,7 +89,7 @@ class QueryRollerTest(unittest.TestCase):
             print(query)
             print(newquery(queries[query]))
             for cypher in model:
-                if query in cypher:
+                if "'"+query+"'" in cypher:
                     print(oldquery(cypher))
                     print(get_edits_string(cypher, queries[query]))
                     for index, line in enumerate(xmi):
