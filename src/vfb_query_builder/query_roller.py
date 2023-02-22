@@ -706,7 +706,7 @@ class QueryLibrary(QueryLibraryCore):
                              q_name=q_name,
                              pretty_print=pretty_print)
 
-    def neuron_region_connectivity_query(self, short_form):
+    def neuron_region_connectivity_query(self, short_form, *args, pretty_print=False, q_name='Get JSON for neuron_region_connectivity query'):
         aci = self.channel_image()
         aci.__setattr__('pvar', 'target')
         parents = self.parents()
@@ -715,9 +715,11 @@ class QueryLibrary(QueryLibraryCore):
                              clauses=[self.term(),  # Not needed?
                                       self.related_individuals_neuron_region(),
                                       parents,
-                                      aci])
+                                      aci],
+                            q_name=q_name,
+                            pretty_print=pretty_print)
 
-    def neuron_neuron_connectivity_query(self, short_form):
+    def neuron_neuron_connectivity_query(self, short_form, *args, pretty_print=False, q_name='Get JSON for neuron_neuron_connectivity query'):
         ci = self.channel_image()
         ci.__setattr__('pvar', 'oi')
         parents = self.parents()
@@ -726,9 +728,11 @@ class QueryLibrary(QueryLibraryCore):
                              clauses=[self.term(),  # Not needed?
                                       self.related_individuals_neuron_neuron(),
                                       parents,
-                                      ci])
+                                      ci],
+                            q_name=q_name,
+                            pretty_print=pretty_print)
 
-    def template_2_datasets_query(self, short_form):
+    def template_2_datasets_query(self, short_form, *args, pretty_print=False, q_name='Get JSON for template_2_datasets query'):
         aci = self.anatomy_channel_image()
         aci.__setattr__('pvar', 'ds')
         # In the absence of extra tools available for Neo4j3.n
@@ -746,9 +750,11 @@ class QueryLibrary(QueryLibraryCore):
                                       aci,  # commenting as too slow w/o limit
                                       pub,
                                       li,
-                                      counts])
+                                      counts],
+                            q_name=q_name,
+                            pretty_print=pretty_print)
 
-    def all_datasets_query(self):
+    def all_datasets_query(self, *args, pretty_print=False, q_name='Get JSON for all_datasets query'):
         aci = self.anatomy_channel_image()
         aci.__setattr__('pvar', 'ds')
         # In the absence of extra tools available for Neo4j3.n
@@ -765,7 +771,9 @@ class QueryLibrary(QueryLibraryCore):
                                       aci, # commenting as too slow w/o limit
                                       pub,
                                       li,
-                                      counts])
+                                      counts],
+                            q_name=q_name,
+                            pretty_print=pretty_print)
 
     def anat_image_query(self, short_forms: List):
         return query_builder(query_short_forms=short_forms,
