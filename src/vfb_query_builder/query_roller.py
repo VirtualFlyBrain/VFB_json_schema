@@ -230,7 +230,9 @@ class QueryLibraryCore:
 
     def relationships(self): return (Clause(vars=["relationships"],
                                             MATCH=Template("OPTIONAL MATCH "
-                                                           "(o:Class)<-[r {type:'Related'}]-($pvar$labels) "),
+                                                           "(o:Class)<-[r {type:'Related'}]-($pvar$labels) " 
+                                                           "where (not exists(r.hide_in_terminfo)) OR "
+                                                           "(not (r.hide_in_terminfo[0] = true)) "),
                                             WITH="CASE WHEN o IS NULL THEN [] "
                                                  "ELSE COLLECT ({ relation: %s, object: %s }) "
                                                  "END AS relationships " % (roll_min_edge_info("r"),
