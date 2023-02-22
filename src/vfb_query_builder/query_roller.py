@@ -22,7 +22,7 @@ class Clause:
         (default specification of pvar).  This should have a return statement specifying how
         primary should be unpacked into a datastructure in  the return statement.
         2. Subsequent clauses are OPTIONAL MATCH statements, they may return a
-        3. Any MATCH statement my consist of multiple whole cypher clauses (MATCH  + WITH)
+        3. Any MATCH statement may consist of multiple whole cypher clauses (MATCH  + WITH)
           In this case, each internal WITH clause must have a $v for interpolation of
           accumulated vars
 
@@ -120,7 +120,7 @@ def roll_min_node_info(var):
     """Rolls core JSON (specifying minimal info about an entity.
     var: the variable name for the entity within this cypher clause."""
     return "{ short_form: %s.short_form, label: coalesce(%s.label,''), " \
-           "iri: %s.iri, types: labels(%s), symbol: coalesce(%s.`symbol`[0], '')} " % (var, var, var, var, var)
+           "iri: %s.iri, types: labels(%s), unique_facets: apoc.coll.sort(coalesce(%s.uniqueFacets, [])), symbol: coalesce(([]+%s.symbol)[0], '')} " % (var, var, var, var, var, var)
 
 
 
@@ -132,8 +132,8 @@ def roll_min_edge_info(var):
 
 def roll_pub_return(var):
     s = Template("{ core: $core, "
-                 "PubMed: coalesce($v.PMID[0], ''), "
-                 "FlyBase: coalesce($v.FlyBase[0], ''), DOI: coalesce($v.DOI[0], '') }")
+                 "PubMed: coalesce(([]+$v.PMID)[0], ''), "
+                 "FlyBase: coalesce(([]+$v.FlyBase)[0], ''), DOI: coalesce(([]+$v.DOI)[0], '') }")
     return s.substitute(core=roll_min_node_info(var), v=var)
 
 
@@ -141,13 +141,13 @@ def roll_pub_return(var):
 # For this it helps to contruct return as a dict
 
 def roll_license_return_dict(var):
-    return {'icon': "coalesce(%s.license_logo[0], '')" % var,
-            'link': "coalesce(%s.license_url[0], '')" % var}
+    return {'icon': "coalesce(([]+%s.license_logo)[0], '')" % var,
+            'link': "coalesce(([]+%s.license_url)[0], '')" % var}
 
 
 def roll_dataset_return_dict(var, typ=''):
     return {
-        "link": "coalesce(%s.dataset_link[0], '')" % var,
+        "link": "coalesce(([]+%s.dataset_link)[0], '')" % var,
     }
 
 
@@ -179,8 +179,8 @@ class QueryLibraryCore:
         self.dataset_spec_fields = {
             "link": "coalesce(%s.dataset_link, '')"
         }
-        self.license_spec_fields = {'icon': "coalesce(%s.license_logo[0], '')",
-                                    'link': "coalesce(%s.license_url[0], '')x"
+        self.license_spec_fields = {'icon': "coalesce(([]+%s.license_logo)[0], '')",
+                                    'link': "coalesce(([]+%s.license_url)[0], '')x"
                                     }
 
     def term(self, return_extensions=None):
@@ -198,14 +198,15 @@ class QueryLibraryCore:
     # EXPRESSION QUERIES
 
     def xrefs(self):
-        match_self_xref = "OPTIONAL MATCH (s:Site { short_form: primary.self_xref }) "
+        match_self_xref = "OPTIONAL MATCH (s:Site { short_form: apoc.convert.toList(primary.self_xref)[0] }) "
         match_ext_xref = "OPTIONAL MATCH (s:Site)<-[dbx:database_cross_reference]-($pvar$labels) "
 
         xr = "CASE WHEN s IS NULL THEN %s ELSE COLLECT" \
-             "({ link_base: coalesce(s.link_base[0], ''), " \
+             "({ link_base: coalesce(([]+s.link_base)[0], ''), " \
              "accession: coalesce(%s, ''), " \
              "link_text: primary.label + ' on ' + s.label, " \
              "homepage: coalesce(s.homepage[0], ''), " \
+             "is_data_source: coalesce(s.is_data_source[0], false), " \
              "site: %s, icon: coalesce(s.link_icon_url[0], ''),  " \
              "link_postfix: coalesce(s.link_postfix, '')}) "  # Should be $pvar$labels not primary, but need sub on WITH!
         xrs = "END AS self_xref, $v"  # Passing vars
@@ -216,7 +217,7 @@ class QueryLibraryCore:
                            % ('[]', 'primary.short_form',
                               roll_min_node_info("s"))),
             WITH='  '.join([xr, xrx]) % ('self_xref',
-                                         'dbx.accession[0]',
+                                         '([]+dbx.accession)[0]',
                                          roll_min_node_info("s")),
             vars=["xrefs"])
 
@@ -230,7 +231,9 @@ class QueryLibraryCore:
 
     def relationships(self): return (Clause(vars=["relationships"],
                                             MATCH=Template("OPTIONAL MATCH "
-                                                           "(o:Class)<-[r {type:'Related'}]-($pvar$labels)"),
+                                                           "(o:Class)<-[r {type:'Related'}]-($pvar$labels) " 
+                                                           "where (not exists(r.hide_in_terminfo)) OR "
+                                                           "(not (r.hide_in_terminfo[0] = true)) "),
                                             WITH="CASE WHEN o IS NULL THEN [] "
                                                  "ELSE COLLECT ({ relation: %s, object: %s }) "
                                                  "END AS relationships " % (roll_min_edge_info("r"),
@@ -287,6 +290,33 @@ class QueryLibraryCore:
 
     # IMAGES
 
+    def anat_cluster_dataset_pubs(self):
+        return Clause(
+            MATCH=Template("MATCH ($pvar$labels)<-[:composed_primarily_of]-(c:Cluster:Individual)"
+                           "-[:has_source]->(ds:scRNAseq_DataSet:Individual)"
+                           "OPTIONAL MATCH (ds)-[:has_reference]->(p:pub)"),
+            WITH="%s AS cluster, %s AS dataset, COLLECT(%s) AS pubs" 
+                 "" % (roll_min_node_info("c"), roll_min_node_info("ds"), roll_pub_return("p")),
+            vars=["cluster, dataset, pubs"]
+        )
+
+    def cluster_anat(self):
+        return Clause(
+            MATCH=Template("MATCH (a:Anatomy:Class)<-[:composed_primarily_of]-($pvar$labels)"),
+            WITH="%s AS anatomy" 
+                 "" % roll_min_node_info("a"),
+            vars=["anatomy"]
+        )
+
+    def cluster_expression(self):
+        return Clause(
+            MATCH=Template("MATCH ($pvar$labels)-[e:expresses]->(g:Gene:Class)"),
+            WITH="e.expression_level[0] as expression_level, "
+                 "e.expression_extent[0] as expression_extent, "
+                 "%s AS gene" % (roll_min_node_info("g")),
+            vars=["expression_level", "expression_extent", "gene"]
+        )
+
     def _set_image_query_common_elements(self):
         self._channel_image_match = "<-[:depicts]-" \
                                     "(channel:Individual)-[irw:in_register_with]" \
@@ -298,8 +328,8 @@ class QueryLibraryCore:
 
         self._channel_image_return = "{ channel: %s, imaging_technique: %s," \
                                      "image: { template_channel : %s, template_anatomy: %s," \
-                                     "image_folder: COALESCE(irw.folder[0], ''), " \
-                                     "index: coalesce(apoc.convert.toInteger(irw.index[0]), []) + [] }" \
+                                     "image_folder: COALESCE(([]+irw.folder)[0], ''), " \
+                                     "index: coalesce(apoc.convert.toInteger(([]+irw.index)[0]), []) + [] }" \
                                      "}" % (roll_min_node_info('channel'),
                                             roll_min_node_info('technique'),
                                             roll_min_node_info('template'),
@@ -342,7 +372,7 @@ class QueryLibraryCore:
                 "(channel:Individual)-[irw:in_register_with] "
                 "->(template:Individual)-[:depicts]-> "
                 "(template_anat:Individual) RETURN template, channel, template_anat, i, irw "
-                "limit 5', {$pvar:$pvar}) yield value with value.template as template, value.channel as channel,"
+                "limit 10', {$pvar:$pvar}) yield value with value.template as template, value.channel as channel,"
                 "value.template_anat as template_anat, value.i as i, value.irw as irw, $v "
                 "OPTIONAL MATCH (channel)-[:is_specified_output_of]"
                 "->(technique:Class) "),
@@ -352,21 +382,21 @@ class QueryLibraryCore:
                      roll_min_node_info("i"), self._channel_image_return),
 
             vars=["anatomy_channel_image"],
-            limit='limit 5, {}) yield value')
+            limit='limit 10, {}) yield value')
 
     def template_domain(self):  return Clause(
         MATCH=Template(
             "OPTIONAL MATCH (technique:Class)<-[:is_specified_output_of]"
             "-(channel:Individual)"
             "-[irw:in_register_with]->(template:Individual)-[:depicts]->($pvar$labels) "
-            "WHERE technique.short_form = 'FBbi_00000224' "
+            "WHERE technique.short_form IN ['FBbi_00000224','FBbi_00000251'] "
             "AND exists(irw.index) "
             "WITH $v, collect ({ channel: channel, irw: irw}) AS painted_domains "
             "UNWIND painted_domains AS pd "
-            "MATCH (channel:Individual { short_form: pd.channel.short_form})"
+            "OPTIONAL MATCH (channel:Individual { short_form: pd.channel.short_form})"
             "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
         WITH="collect({ anatomical_type: %s ,"
-             " anatomical_individual: %s, folder: pd.irw.folder[0], "
+             " anatomical_individual: %s, folder: ([]+pd.irw.folder)[0], "
              "center: coalesce (pd.irw.center, []), "
              "index: [] + coalesce (pd.irw.index, []) })"
              " AS template_domains" % (roll_min_node_info("c"),
@@ -378,9 +408,9 @@ class QueryLibraryCore:
             "MATCH (channel:Individual)<-[irw:in_register_with]-"
             "(channel:Individual)-[:depicts]->($pvar$labels)"),
         WITH="{ index: coalesce(apoc.convert.toInteger(irw.index), []) + [], "
-             "extent: irw.extent[0], center: irw.center[0], voxel: irw.voxel[0], "
-             "orientation: coalesce(irw.orientation[0], ''), "
-             "image_folder: coalesce(irw.folder[0],''), "
+             "extent: ([]+irw.extent)[0], center: ([]+irw.center)[0], voxel: ([]+irw.voxel)[0], "
+             "orientation: coalesce(([]+irw.orientation)[0], ''), "
+             "image_folder: coalesce(([]+irw.folder)[0],''), "
              "channel: %s } as template_channel" % roll_min_node_info("channel"),
         vars=["template_channel"])
 
@@ -389,15 +419,15 @@ class QueryLibraryCore:
     def _set_pub_common_query_elements(self):
         # This is only a function for ease of code editing - places declaration next to where it is used.
         self._pub_return = "{ core: %s, " \
-                           "PubMed: coalesce(p.PMID[0], ''), " \
-                           "FlyBase: coalesce(p.FlyBase[0], ''), " \
-                           "DOI: coalesce(p.DOI[0], '') } " \
+                           "PubMed: coalesce(([]+p.PMID)[0], ''), " \
+                           "FlyBase: coalesce(([]+p.FlyBase)[0], ''), " \
+                           "DOI: coalesce(([]+p.DOI)[0], '') } " \
                            "" % roll_min_node_info("p")
 
         # temp fixes in here for list -> single !
-        self._syn_return = "{ label: coalesce(rp.value[0], ''), " \
+        self._syn_return = "{ label: coalesce(([]+rp.value)[0], ''), " \
                             "scope: coalesce(rp.scope, ''), " \
-                            "type: coalesce(rp.has_synonym_type[0],'') } "
+                            "type: coalesce(([]+rp.has_synonym_type)[0],'') } "
 
     def def_pubs(self):
         return Clause(MATCH=Template("OPTIONAL MATCH ($pvar$labels)-"
@@ -444,7 +474,7 @@ class QueryLibraryCore:
         return Clause(
             MATCH=Template("OPTIONAL MATCH "
                            "($pvar$labels)-[:$prel]-(ds:DataSet)"
-                           "-[:has_license]->(l:License)"),
+                           "-[:has_license|license]->(l:License)"),
             WITH="COLLECT ({ dataset: %s, license: %s}) "
                  "AS dataset_license" % (roll_node_map(var='ds',
                                                        d=roll_dataset_return_dict('ds'),
@@ -458,7 +488,7 @@ class QueryLibraryCore:
     def license(self):
         return Clause(
             MATCH=Template("OPTIONAL MATCH "
-                           "($pvar$labels)-[:has_license]->(l:License)"),
+                           "($pvar$labels)-[:has_license|license]->(l:License)"),
             WITH="collect (%s) as license"
                  % roll_node_map(var='l',
                                  typ='core',
@@ -485,8 +515,8 @@ class QueryLibrary(QueryLibraryCore):
     def anatomical_ind_term_info(self, short_form: list,
                                  *args,
                                  pretty_print=False,
-                                 q_name='Get JSON for Individual:Anatomy'):
-        return query_builder(query_labels=['Individual', 'Anatomy'],
+                                 q_name='Get JSON for Individual'):
+        return query_builder(query_labels=['Individual'],
                              query_short_forms=short_form,
                              clauses=[self.term(),
                                       self.dataSet_license(),
@@ -494,7 +524,8 @@ class QueryLibrary(QueryLibraryCore):
                                       self.relationships(),
                                       self.xrefs(),
                                       self.channel_image(),
-                             #         self.related_individuals()
+                                      self.pub_syn(),
+                                      self.def_pubs()
                                       ],
                              q_name=q_name,
                              pretty_print=pretty_print)  # Is Anatomy label sufficient here
@@ -570,17 +601,19 @@ class QueryLibrary(QueryLibraryCore):
     def pub_term_info(self, short_form: list, *args, pretty_print=False,
                            q_name='Get JSON for pub'):
         return_clause_hack = ", {" \
-                             "title: coalesce(primary.title[0], '') ," \
-                             "PubMed: coalesce(primary.PMID[0], ''), "  \
-                             "FlyBase: coalesce(primary.FlyBase[0], ''), " \
-                             "DOI: coalesce(primary.DOI[0], '') }" \
+                             "title: coalesce(([]+primary.title)[0], '') ," \
+                             "PubMed: coalesce(([]+primary.PMID)[0], ''), "  \
+                             "FlyBase: coalesce(([]+primary.FlyBase)[0], ''), " \
+                             "DOI: coalesce(([]+primary.DOI)[0], '') }" \
                              "AS pub_specific_content"
 
         return query_builder(
             query_short_forms=short_form,
             query_labels=['Individual', 'pub'],
             clauses=[self.term(),
-                     self.dataSet_license(prel='has_reference')]
+                     self.dataSet_license(prel='has_reference')],
+            q_name=q_name,
+            pretty_print=pretty_print
         ) + return_clause_hack
 
 
@@ -627,7 +660,7 @@ class QueryLibrary(QueryLibraryCore):
         # XREFS
 
     def template_2_datasets_wrapper(self):
-        return Clause(MATCH=Template("MATCH (t:Template)<-[depicts]-(tc:Template)-"
+        return Clause(MATCH=Template("MATCH (t:Template)<-[:depicts]-(tc:Template)<-"
                                      "[:in_register_with]-(c:Individual)-[:depicts]"
                                      "->(ai:Individual)-[:has_source]->(ds:DataSet) WHERE t.short_form in $ssf"),
                       WITH="distinct ds",
@@ -642,7 +675,7 @@ class QueryLibrary(QueryLibraryCore):
                       node_vars=['ds'],
                       RETURN="%s as dataset" % (roll_min_node_info('ds')))
 
-    def anat_2_ep_query(self, short_forms, *args, pretty_print=False):
+    def anat_2_ep_query(self, short_forms, *args, pretty_print=False, q_name='Get JSON for anat_2_ep query'):
         # we want images of eps (ep, returned by self.anat_2_ep_wrapper())
         aci = self.anatomy_channel_image()
         aci.__setattr__('pvar', 'ep')
@@ -651,10 +684,10 @@ class QueryLibrary(QueryLibraryCore):
                              query_short_forms=short_forms,
                              clauses=[self.anat_2_ep_wrapper(),
                                       aci],
-                             q_name='Get JSON for anat_2_ep query',
+                             q_name=q_name,
                              pretty_print=pretty_print)
 
-    def ep_2_anat_query(self, short_form, *args, pretty_print=False):
+    def ep_2_anat_query(self, short_forms, *args, pretty_print=False, q_name='Get JSON for ep_2_anat query'):
         # columns: anatomy,
         aci = self.anatomy_channel_image()
         # We want images of anat, returned by self.anat_2_ep_wrapper())
@@ -666,11 +699,11 @@ class QueryLibrary(QueryLibraryCore):
         rel.__setattr__('pvar', 'anoni')
 
         return query_builder(query_labels=['Class'],
-                             query_short_forms=[short_form],
+                             query_short_forms=short_forms,
                              clauses=[self.ep_2_anat_wrapper(),
                                       rel,
                                       aci],
-                             q_name='Get JSON for ep_2_anat query',
+                             q_name=q_name,
                              pretty_print=pretty_print)
 
     def neuron_region_connectivity_query(self, short_form):
@@ -740,6 +773,7 @@ class QueryLibrary(QueryLibraryCore):
                              clauses=[self.term(),
                                       self.channel_image(),
                                       self.image_type()],
+                             q_name='Get JSON for anat image query',
                              pretty_print=True)
 
     def anat_query(self, short_forms: List):
@@ -747,9 +781,24 @@ class QueryLibrary(QueryLibraryCore):
                              query_labels=['Class', 'Anatomy'],
                              clauses=[self.term(),
                                       self.anatomy_channel_image()],
+                             q_name='Get JSON for anat query',
                              pretty_print=True)
 
-def term_info_export(escape=True):
+    def anat_scRNAseq_query(self, short_forms: List):
+        return query_builder(query_short_forms=short_forms,
+                             query_labels=['Class', 'Anatomy'],
+                             clauses=[self.term(), self.anat_cluster_dataset_pubs()],
+                             q_name='Get JSON for anat scRNAseq query',
+                             pretty_print=True)
+
+    def cluster_expression_query(self, short_forms: List):
+        return query_builder(query_short_forms=short_forms,
+                             query_labels=['Individual', 'Cluster'],
+                             clauses=[self.term(), self.cluster_expression(), self.cluster_anat()],
+                             q_name='Get JSON for cluster expression query',
+                             pretty_print=True)
+
+def term_info_export(escape='xmi'):
     # Generate a JSON with TermInto queries
     ql = QueryLibrary()
     query_methods = ['anatomical_ind_term_info',
@@ -766,13 +815,35 @@ def term_info_export(escape=True):
         # This whole approach feels a bit hacky...
         qf = getattr(ql, qm)
         q_name = qf.__kwdefaults__['q_name']
-        q = qf(short_form=['$ID'])
-        if escape:
-            out[q_name] = saxutils.escape(q)
+        q = qf(short_form='[$id]')
+        if escape == 'xmi' or escape == True:
+            out[q_name] = '&quot;statement&quot;: &quot;' + q.replace('  ',' ').replace('<','&lt;').replace('\n',' ').replace('  ',' ') + '&quot;, &quot;parameters&quot; : { &quot;id&quot; : &quot;$ID&quot; }'
         else:
-            out[q_name] = q
+            if escape == 'json':
+                out[q_name] = '  "' + q_name + '": "' + q.replace('  ',' ').replace('\n',' ').replace('  ',' ').replace('[$id]',"['$ID']").replace('<','&lt;').replace('>','&gt;') + '",'
+            else:
+                out[q_name] = q
     return json.dumps(out)
 
+def single_input_export(escape='json'):
+    # Generate a JSON with TermInto queries
+    ql = QueryLibrary()
+    query_methods = ['ep_2_anat_query']
+
+    out = {}
+    for qm in query_methods:
+        # This whole approach feels a bit hacky...
+        qf = getattr(ql, qm)
+        q_name = qf.__kwdefaults__['q_name']
+        q = qf(short_forms='[$id]')
+        if escape == 'xmi' or escape == True:
+            out[q_name] = '&quot;statement&quot;: &quot;' + q.replace('  ',' ').replace('<','&lt;').replace('\n',' ').replace('  ',' ') + '&quot;, &quot;parameters&quot; : { &quot;id&quot; : &quot;$ID&quot; }'
+        else:
+            if escape == 'json':
+                out[q_name] = '  "' + q_name + '": "' + q.replace('  ',' ').replace('\n',' ').replace('  ',' ').replace('[$id]',"['$ID']").replace('<','&lt;').replace('>','&gt;') + '",'
+            else:
+                out[q_name] = q
+    return json.dumps(out)
 
 def results_query_single_input_export(escape=True):
     # Generate a JSON with TermInto queries

@@ -25,7 +25,7 @@ class QueryRollerTest(unittest.TestCase):
                          query=query, single=False)
 
     def test_ep_2_anat_query(self):
-        query = self.ql.ep_2_anat_query('VFBexp_FBtp0106753',
+        query = self.ql.ep_2_anat_query(['VFBexp_FBtp0106753'],
                                        pretty_print=True,)
 
         print("Testing and printing first result in list only.")
@@ -50,14 +50,20 @@ class QueryRollerTest(unittest.TestCase):
         r = self.qw.test(t=self,
                          query=query, single=False)
 
+    def test_anat_scRNAseq_query(self):
+        query = self.ql.anat_scRNAseq_query(short_forms=['FBbt_00048152', 'FBbt_00048274'])
+        print("Testing and printing first result in list only.")
+        r = self.qw.test(t=self,
+                         query=query, single=False)
+
     def test_neuron_region_connectivity_query(self):
         query = self.ql.neuron_region_connectivity_query('VFB_jrchjtdr')
         print("Testing and printing first result in list only.")
         r = self.qw.test(t=self,
                          query=query, single=False)
 
-    def test_neuron_neuron_connectivity_query(self):
-        query = self.ql.neuron_neuron_connectivity_query('VFB_jrchjtdr')
+    def test_cluster_expression(self):
+        query = self.ql.cluster_expression_query(short_forms=['FBlc0003890', 'FBlc0003882'])
         print("Testing and printing first result in list only.")
         r = self.qw.test(t=self,
                          query=query, single=False)
@@ -65,4 +71,3 @@ class QueryRollerTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
-

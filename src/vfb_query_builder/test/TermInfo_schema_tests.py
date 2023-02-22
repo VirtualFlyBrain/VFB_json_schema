@@ -38,7 +38,7 @@ class TermInfoRollerTest(unittest.TestCase):
                                        self.ql.xrefs()],
                               query_short_forms=['VFBexp_FBtp0123937FBtp0120068'])
         r = self.qw.test(t=self,
-                         query=query)
+                         query=query, single=False)
 
     def test_class_parents(self):
         query = query_builder(query_labels=["Class"],
@@ -76,7 +76,7 @@ class TermInfoRollerTest(unittest.TestCase):
         query = query_builder(query_labels=["Individual"],
                               clauses=[self.ql.term(),
                                        self.ql.relationships()],
-                              query_short_forms=['VFB_00011179'])
+                              query_short_forms=['VFB_jrchjte4'])
         r = self.qw.test(t=self,
                          query=query)
 
@@ -199,7 +199,7 @@ class TermInfoRollerTest(unittest.TestCase):
     def test_split_class(self):
         query = self.ql.split_class_term_info(short_form=["VFBexp_FBtp0123136FBtp0119953"], pretty_print=True)
         r = self.qw.test(t=self,
-                         query=query)
+                         query=query, single=False)
 
     def test_pub(self):
         query = self.ql.pub_term_info(short_form=['FBrf0221438'])
