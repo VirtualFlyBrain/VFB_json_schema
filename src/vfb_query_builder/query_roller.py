@@ -706,12 +706,12 @@ class QueryLibrary(QueryLibraryCore):
                              q_name=q_name,
                              pretty_print=pretty_print)
 
-    def neuron_region_connectivity_query(self, short_form, *args, pretty_print=False, q_name='Get JSON for neuron_region_connectivity query'):
+    def neuron_region_connectivity_query(self, short_forms, *args, pretty_print=False, q_name='Get JSON for neuron_region_connectivity query'):
         aci = self.channel_image()
         aci.__setattr__('pvar', 'target')
         parents = self.parents()
         parents.__setattr__('pvar', 'target')
-        return query_builder(query_short_forms=[short_form],
+        return query_builder(query_short_forms=short_forms,
                              clauses=[self.term(),  # Not needed?
                                       self.related_individuals_neuron_region(),
                                       parents,
@@ -719,12 +719,12 @@ class QueryLibrary(QueryLibraryCore):
                             q_name=q_name,
                             pretty_print=pretty_print)
 
-    def neuron_neuron_connectivity_query(self, short_form, *args, pretty_print=False, q_name='Get JSON for neuron_neuron_connectivity query'):
+    def neuron_neuron_connectivity_query(self, short_forms, *args, pretty_print=False, q_name='Get JSON for neuron_neuron_connectivity query'):
         ci = self.channel_image()
         ci.__setattr__('pvar', 'oi')
         parents = self.parents()
         parents.__setattr__('pvar', 'oi')
-        return query_builder(query_short_forms=[short_form],
+        return query_builder(query_short_forms=short_forms,
                              clauses=[self.term(),  # Not needed?
                                       self.related_individuals_neuron_neuron(),
                                       parents,
@@ -732,7 +732,7 @@ class QueryLibrary(QueryLibraryCore):
                             q_name=q_name,
                             pretty_print=pretty_print)
 
-    def template_2_datasets_query(self, short_form, *args, pretty_print=False, q_name='Get JSON for template_2_datasets query'):
+    def template_2_datasets_query(self, short_forms, *args, pretty_print=False, q_name='Get JSON for template_2_datasets query'):
         aci = self.anatomy_channel_image()
         aci.__setattr__('pvar', 'ds')
         # In the absence of extra tools available for Neo4j3.n
@@ -745,7 +745,7 @@ class QueryLibrary(QueryLibraryCore):
         li.__setattr__('pvar', 'ds')
         counts = self.dataset_counts()
         counts.__setattr__('pvar', 'ds')
-        return query_builder(query_short_forms=[short_form],
+        return query_builder(query_short_forms=short_forms,
                              clauses=[self.template_2_datasets_wrapper(),
                                       aci,  # commenting as too slow w/o limit
                                       pub,
