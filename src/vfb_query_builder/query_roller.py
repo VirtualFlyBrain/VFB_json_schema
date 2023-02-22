@@ -739,7 +739,7 @@ def single_input_export(escape='json'):
         # This whole approach feels a bit hacky...
         qf = getattr(ql, qm)
         q_name = qf.__kwdefaults__['q_name']
-        q = qf(short_form='[$id]')
+        q = qf(short_forms='[$id]')
         if escape == 'xmi' or escape == True:
             out[q_name] = '&quot;statement&quot;: &quot;' + q.replace('  ',' ').replace('<','&lt;').replace('\n',' ').replace('  ',' ') + '&quot;, &quot;parameters&quot; : { &quot;id&quot; : &quot;$ID&quot; }'
         else:
