@@ -33,7 +33,7 @@ class QueryRollerTest(unittest.TestCase):
                          query=query, single=False)
 
     def test_template_2_datasets_query(self):
-        query = self.ql.template_2_datasets_query('VFB_00050000')
+        query = self.ql.template_2_datasets_query(['VFB_00050000'])
         print("Testing and printing first result in list only.")
         r = self.qw.test(t=self,
                          query=query, single=False)
@@ -57,7 +57,7 @@ class QueryRollerTest(unittest.TestCase):
                          query=query, single=False)
 
     def test_neuron_region_connectivity_query(self):
-        query = self.ql.neuron_region_connectivity_query('VFB_jrchjtdr')
+        query = self.ql.neuron_region_connectivity_query(['VFB_jrchjtdr'])
         print("Testing and printing first result in list only.")
         r = self.qw.test(t=self,
                          query=query, single=False)
