@@ -833,12 +833,15 @@ def term_info_export(escape='xmi'):
                 out[q_name] = q
     return json.dumps(out)
 
-def single_input_export(escape='json'):
-    # Generate a JSON with TermInto queries
+def multi_input_export(escape='json'):
+    # Generate a JSON with queries
     ql = QueryLibrary()
     query_methods = ['ep_2_anat_query',
                      'template_2_datasets_query',
-                     'neuron_region_connectivity_query']
+                     'neuron_region_connectivity_query',
+                     'anat_2_ep_query',
+                     'anat_image_query',
+                     'anat_query']
 
     out = {}
     for qm in query_methods:
