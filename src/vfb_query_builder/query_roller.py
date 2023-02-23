@@ -329,6 +329,11 @@ class QueryLibraryCore:
         self._channel_image_return = "{ channel: %s, imaging_technique: %s," \
                                      "image: { template_channel : %s, template_anatomy: %s," \
                                      "image_folder: COALESCE(([]+irw.folder)[0], ''), " \
+                                     "image_nrrd: COALESCE(([]+irw.nrrd)[0], ''), " \
+                                     "image_thumbnail: COALESCE(([]+irw.thumbnail)[0], ''), " \
+                                     "image_swc: COALESCE(([]+irw.swc)[0], ''), " \
+                                     "image_obj: COALESCE(([]+irw.obj)[0], ''), " \
+                                     "image_wlz: COALESCE(([]+irw.wlz)[0], ''), " \
                                      "index: coalesce(apoc.convert.toInteger(([]+irw.index)[0]), []) + [] }" \
                                      "}" % (roll_min_node_info('channel'),
                                             roll_min_node_info('technique'),
@@ -411,6 +416,11 @@ class QueryLibraryCore:
              "extent: ([]+irw.extent)[0], center: ([]+irw.center)[0], voxel: ([]+irw.voxel)[0], "
              "orientation: coalesce(([]+irw.orientation)[0], ''), "
              "image_folder: coalesce(([]+irw.folder)[0],''), "
+             "image_nrrd: COALESCE(([]+irw.nrrd)[0], ''), "
+             "image_thumbnail: COALESCE(([]+irw.thumbnail)[0], ''), "
+             "image_swc: COALESCE(([]+irw.swc)[0], ''), "
+             "image_obj: COALESCE(([]+irw.obj)[0], ''), "
+             "image_wlz: COALESCE(([]+irw.wlz)[0], ''), "
              "channel: %s } as template_channel" % roll_min_node_info("channel"),
         vars=["template_channel"])
 
