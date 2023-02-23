@@ -775,7 +775,7 @@ class QueryLibrary(QueryLibraryCore):
                             q_name=q_name,
                             pretty_print=pretty_print)
 
-    def anat_image_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for anat image query'):
+    def anat_image_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for anat_image query'):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Individual'],
                              clauses=[self.term(),
@@ -792,14 +792,14 @@ class QueryLibrary(QueryLibraryCore):
                              q_name=q_name,
                              pretty_print=pretty_print)
 
-    def anat_scRNAseq_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for anat scRNAseq query'):
+    def anat_scRNAseq_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for anat_scRNAseq query'):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Class', 'Anatomy'],
                              clauses=[self.term(), self.anat_cluster_dataset_pubs()],
                              q_name=q_name,
                              pretty_print=pretty_print)
 
-    def cluster_expression_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for cluster expression query'):
+    def cluster_expression_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for cluster_expression query'):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Individual', 'Cluster'],
                              clauses=[self.term(), self.cluster_expression(), self.cluster_anat()],
@@ -839,9 +839,12 @@ def multi_input_export(escape='json'):
     query_methods = ['ep_2_anat_query',
                      'template_2_datasets_query',
                      'neuron_region_connectivity_query',
+                     'neuron_neuron_connectivity_query',
                      'anat_2_ep_query',
                      'anat_image_query',
-                     'anat_query']
+                     'anat_query',
+                     'anat_scRNAseq_query',
+                     'cluster_expression_query']
 
     out = {}
     for qm in query_methods:
