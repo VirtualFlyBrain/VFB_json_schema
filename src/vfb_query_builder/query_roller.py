@@ -775,36 +775,36 @@ class QueryLibrary(QueryLibraryCore):
                             q_name=q_name,
                             pretty_print=pretty_print)
 
-    def anat_image_query(self, short_forms: List):
+    def anat_image_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for anat image query'):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Individual'],
                              clauses=[self.term(),
                                       self.channel_image(),
                                       self.image_type()],
-                             q_name='Get JSON for anat image query',
-                             pretty_print=True)
+                             q_name=q_name,
+                             pretty_print=pretty_print)
 
-    def anat_query(self, short_forms: List):
+    def anat_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for anat query'):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Class', 'Anatomy'],
                              clauses=[self.term(),
                                       self.anatomy_channel_image()],
-                             q_name='Get JSON for anat query',
-                             pretty_print=True)
+                             q_name=q_name,
+                             pretty_print=pretty_print)
 
-    def anat_scRNAseq_query(self, short_forms: List):
+    def anat_scRNAseq_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for anat scRNAseq query'):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Class', 'Anatomy'],
                              clauses=[self.term(), self.anat_cluster_dataset_pubs()],
-                             q_name='Get JSON for anat scRNAseq query',
-                             pretty_print=True)
+                             q_name=q_name,
+                             pretty_print=pretty_print)
 
-    def cluster_expression_query(self, short_forms: List):
+    def cluster_expression_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for cluster expression query'):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Individual', 'Cluster'],
                              clauses=[self.term(), self.cluster_expression(), self.cluster_anat()],
-                             q_name='Get JSON for cluster expression query',
-                             pretty_print=True)
+                             q_name=q_name,
+                             pretty_print=pretty_print)
 
 def term_info_export(escape='xmi'):
     # Generate a JSON with TermInto queries
