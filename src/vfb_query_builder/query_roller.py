@@ -706,29 +706,33 @@ class QueryLibrary(QueryLibraryCore):
                              q_name=q_name,
                              pretty_print=pretty_print)
 
-    def neuron_region_connectivity_query(self, short_form):
+    def neuron_region_connectivity_query(self, short_forms, *args, pretty_print=False, q_name='Get JSON for neuron_region_connectivity query'):
         aci = self.channel_image()
         aci.__setattr__('pvar', 'target')
         parents = self.parents()
         parents.__setattr__('pvar', 'target')
-        return query_builder(query_short_forms=[short_form],
+        return query_builder(query_short_forms=short_forms,
                              clauses=[self.term(),  # Not needed?
                                       self.related_individuals_neuron_region(),
                                       parents,
-                                      aci])
+                                      aci],
+                            q_name=q_name,
+                            pretty_print=pretty_print)
 
-    def neuron_neuron_connectivity_query(self, short_form):
+    def neuron_neuron_connectivity_query(self, short_forms, *args, pretty_print=False, q_name='Get JSON for neuron_neuron_connectivity query'):
         ci = self.channel_image()
         ci.__setattr__('pvar', 'oi')
         parents = self.parents()
         parents.__setattr__('pvar', 'oi')
-        return query_builder(query_short_forms=[short_form],
+        return query_builder(query_short_forms=short_forms,
                              clauses=[self.term(),  # Not needed?
                                       self.related_individuals_neuron_neuron(),
                                       parents,
-                                      ci])
+                                      ci],
+                            q_name=q_name,
+                            pretty_print=pretty_print)
 
-    def template_2_datasets_query(self, short_form):
+    def template_2_datasets_query(self, short_forms, *args, pretty_print=False, q_name='Get JSON for template_2_datasets query'):
         aci = self.anatomy_channel_image()
         aci.__setattr__('pvar', 'ds')
         # In the absence of extra tools available for Neo4j3.n
@@ -741,14 +745,16 @@ class QueryLibrary(QueryLibraryCore):
         li.__setattr__('pvar', 'ds')
         counts = self.dataset_counts()
         counts.__setattr__('pvar', 'ds')
-        return query_builder(query_short_forms=[short_form],
+        return query_builder(query_short_forms=short_forms,
                              clauses=[self.template_2_datasets_wrapper(),
                                       aci,  # commenting as too slow w/o limit
                                       pub,
                                       li,
-                                      counts])
+                                      counts],
+                            q_name=q_name,
+                            pretty_print=pretty_print)
 
-    def all_datasets_query(self):
+    def all_datasets_query(self, *args, pretty_print=False, q_name='Get JSON for all_datasets query'):
         aci = self.anatomy_channel_image()
         aci.__setattr__('pvar', 'ds')
         # In the absence of extra tools available for Neo4j3.n
@@ -765,38 +771,40 @@ class QueryLibrary(QueryLibraryCore):
                                       aci, # commenting as too slow w/o limit
                                       pub,
                                       li,
-                                      counts])
+                                      counts],
+                            q_name=q_name,
+                            pretty_print=pretty_print)
 
-    def anat_image_query(self, short_forms: List):
+    def anat_image_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for anat_image query'):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Individual'],
                              clauses=[self.term(),
                                       self.channel_image(),
                                       self.image_type()],
-                             q_name='Get JSON for anat image query',
-                             pretty_print=True)
+                             q_name=q_name,
+                             pretty_print=pretty_print)
 
-    def anat_query(self, short_forms: List):
+    def anat_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for anat query'):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Class', 'Anatomy'],
                              clauses=[self.term(),
                                       self.anatomy_channel_image()],
-                             q_name='Get JSON for anat query',
-                             pretty_print=True)
+                             q_name=q_name,
+                             pretty_print=pretty_print)
 
-    def anat_scRNAseq_query(self, short_forms: List):
+    def anat_scRNAseq_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for anat_scRNAseq query'):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Class', 'Anatomy'],
                              clauses=[self.term(), self.anat_cluster_dataset_pubs()],
-                             q_name='Get JSON for anat scRNAseq query',
-                             pretty_print=True)
+                             q_name=q_name,
+                             pretty_print=pretty_print)
 
-    def cluster_expression_query(self, short_forms: List):
+    def cluster_expression_query(self, short_forms: List, *args, pretty_print=False, q_name='Get JSON for cluster_expression query'):
         return query_builder(query_short_forms=short_forms,
                              query_labels=['Individual', 'Cluster'],
                              clauses=[self.term(), self.cluster_expression(), self.cluster_anat()],
-                             q_name='Get JSON for cluster expression query',
-                             pretty_print=True)
+                             q_name=q_name,
+                             pretty_print=pretty_print)
 
 def term_info_export(escape='xmi'):
     # Generate a JSON with TermInto queries
@@ -820,15 +828,23 @@ def term_info_export(escape='xmi'):
             out[q_name] = '&quot;statement&quot;: &quot;' + q.replace('  ',' ').replace('<','&lt;').replace('\n',' ').replace('  ',' ') + '&quot;, &quot;parameters&quot; : { &quot;id&quot; : &quot;$ID&quot; }'
         else:
             if escape == 'json':
-                out[q_name] = '  "' + q_name + '": "' + q.replace('  ',' ').replace('\n',' ').replace('  ',' ').replace('[$id]',"['$ID']").replace('<','&lt;').replace('>','&gt;') + '",'
+                out[q_name] = '  "' + q_name + '": "' + q.replace('  ',' ').replace('\n',' ').replace('  ',' ').replace('[$id]',"['$ID']") + '",'
             else:
                 out[q_name] = q
     return json.dumps(out)
 
-def single_input_export(escape='json'):
-    # Generate a JSON with TermInto queries
+def multi_input_export(escape='json'):
+    # Generate a JSON with queries
     ql = QueryLibrary()
-    query_methods = ['ep_2_anat_query']
+    query_methods = ['ep_2_anat_query',
+                     'template_2_datasets_query',
+                     'neuron_region_connectivity_query',
+                     'neuron_neuron_connectivity_query',
+                     'anat_2_ep_query',
+                     'anat_image_query',
+                     'anat_query',
+                     'anat_scRNAseq_query',
+                     'cluster_expression_query']
 
     out = {}
     for qm in query_methods:
@@ -840,7 +856,7 @@ def single_input_export(escape='json'):
             out[q_name] = '&quot;statement&quot;: &quot;' + q.replace('  ',' ').replace('<','&lt;').replace('\n',' ').replace('  ',' ') + '&quot;, &quot;parameters&quot; : { &quot;id&quot; : &quot;$ID&quot; }'
         else:
             if escape == 'json':
-                out[q_name] = '  "' + q_name + '": "' + q.replace('  ',' ').replace('\n',' ').replace('  ',' ').replace('[$id]',"['$ID']").replace('<','&lt;').replace('>','&gt;') + '",'
+                out[q_name] = '  "' + q_name + '": "' + q.replace('  ',' ').replace('\n',' ').replace('  ',' ').replace('[$id]',"['$ID']") + '",'
             else:
                 out[q_name] = q
     return json.dumps(out)

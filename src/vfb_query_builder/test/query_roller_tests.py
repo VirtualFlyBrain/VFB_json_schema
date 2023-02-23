@@ -1,5 +1,5 @@
 import unittest
-from vfb_query_builder.query_roller import QueryLibrary, term_info_export, single_input_export
+from vfb_query_builder.query_roller import QueryLibrary, term_info_export, multi_input_export
 import difflib
 import json
 import urllib.request
@@ -76,9 +76,9 @@ class QueryRollerTest(unittest.TestCase):
         print('New VFB_TermInfo_queries.json')
         print(''.join(xmi))
 
-        queries = json.loads(single_input_export(escape='json'))
+        queries = json.loads(multi_input_export(escape='json'))
         # extract out the cypher queries from the VFBconnect master branch
-        ecore=urllib.request.urlopen("https://github.com/VirtualFlyBrain/VFB_connect/raw/master/src/vfb_connect/resources/VFB_results_single_input.json")
+        ecore=urllib.request.urlopen("https://github.com/VirtualFlyBrain/VFB_connect/raw/master/src/vfb_connect/resources/VFB_results_multi_input.json")
         model = []
         xmi = []
         for line in ecore:
@@ -96,7 +96,7 @@ class QueryRollerTest(unittest.TestCase):
                         if cypher in line:
                             xmi[index] = line.replace(cypher, queries[query])
                             break
-        print('New VFB_results_single_input.json')
+        print('New VFB_results_multi_input.json')
         print(''.join(xmi))
 
 
