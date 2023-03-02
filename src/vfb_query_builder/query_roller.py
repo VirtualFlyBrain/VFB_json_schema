@@ -402,12 +402,12 @@ class QueryLibraryCore:
             "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
         WITH="collect({ anatomical_type: %s ,"
              " anatomical_individual: %s, "
-             "folder: COALESCE(([]+pd.irw.folder)[0], ''), " \
-             "image_nrrd: COALESCE(([]+pd.irw.nrrd)[0], ''), " \
-             "image_thumbnail: COALESCE(([]+pd.irw.thumbnail)[0], ''), " \
-             "image_swc: COALESCE(([]+pd.irw.swc)[0], ''), " \
-             "image_obj: COALESCE(([]+pd.irw.obj)[0], ''), " \
-             "image_wlz: COALESCE(([]+pd.irw.wlz)[0], ''), " \
+             "folder: COALESCE(([]+pd.irw.folder)[0], ''), "
+             "image_nrrd: COALESCE(([]+pd.irw.nrrd)[0], ''), "
+             "image_thumbnail: COALESCE(([]+pd.irw.thumbnail)[0], ''), "
+             "image_swc: COALESCE(([]+pd.irw.swc)[0], ''), "
+             "image_obj: COALESCE(([]+pd.irw.obj)[0], ''), "
+             "image_wlz: COALESCE(([]+pd.irw.wlz)[0], ''), "
              "center: coalesce (pd.irw.center, []), "
              "index: [] + coalesce (pd.irw.index, []) })"
              " AS template_domains" % (roll_min_node_info("c"),
