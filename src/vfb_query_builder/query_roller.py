@@ -412,7 +412,7 @@ class QueryLibraryCore:
         MATCH=Template(
             "MATCH (channel:Individual)<-[irw:in_register_with]-"
             "(channel:Individual)-[:depicts]->($pvar$labels)"),
-        WITH="{index: [] + coalesce(pd.irw.index, []), "
+        WITH="{index: [] + coalesce(irw.index, []), "
              "extent: ([]+irw.extent)[0], center: ([]+irw.center)[0], voxel: ([]+irw.voxel)[0], "
              "orientation: coalesce(([]+irw.orientation)[0], ''), "
              "image_folder: coalesce(([]+irw.folder)[0],''), "
