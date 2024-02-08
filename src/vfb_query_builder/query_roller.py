@@ -403,7 +403,7 @@ class QueryLibraryCore:
         WITH="collect({ anatomical_type: %s ,"
              " anatomical_individual: %s, folder: ([]+pd.irw.folder)[0], "
              "center: coalesce (pd.irw.center, []), "
-             "index: [] + coalesce(pd.irw.index, []) })"
+             "index: coalesce(apoc.convert.toInteger(([]+irw.index)[0]), []) + [] })"
              " AS template_domains" % (roll_min_node_info("c"),
                                        roll_min_node_info("ai")),
         vars=["template_domains"])
@@ -412,7 +412,7 @@ class QueryLibraryCore:
         MATCH=Template(
             "MATCH (channel:Individual)<-[irw:in_register_with]-"
             "(channel:Individual)-[:depicts]->($pvar$labels)"),
-        WITH="{index: [] + coalesce(irw.index, []), "
+        WITH="{index: coalesce(apoc.convert.toInteger(([]+irw.index)[0]), []) + []), "
              "extent: ([]+irw.extent)[0], center: ([]+irw.center)[0], voxel: ([]+irw.voxel)[0], "
              "orientation: coalesce(([]+irw.orientation)[0], ''), "
              "image_folder: coalesce(([]+irw.folder)[0],''), "
