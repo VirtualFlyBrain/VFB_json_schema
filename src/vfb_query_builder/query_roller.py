@@ -403,7 +403,7 @@ class QueryLibraryCore:
         WITH="collect({ anatomical_type: %s ,"
              " anatomical_individual: %s, folder: ([]+pd.irw.folder)[0], "
              "center: coalesce (pd.irw.center, []), "
-             "index: coalesce(apoc.convert.toInteger(([]+irw.index)[0]), []) + [] })"
+             "index: coalesce(apoc.convert.toInteger(([]+pd.irw.index)[0]), []) + [] })"
              " AS template_domains" % (roll_min_node_info("c"),
                                        roll_min_node_info("ai")),
         vars=["template_domains"])
