@@ -231,9 +231,9 @@ class QueryLibraryCore:
 
     def relationships(self): return (Clause(vars=["relationships"],
                                             MATCH=Template("OPTIONAL MATCH "
-                                                           "(o:Class)<-[r {type:'Related'}]-($pvar$labels) " 
-                                                           "where (not exists(r.hide_in_terminfo)) OR "
-                                                           "(not (r.hide_in_terminfo[0] = true)) "),
+                                                           "(o:Class)<-[r {}]-($pvar$labels) " 
+                                                           "WHERE (r.type='Related' OR r:term_replaced_by) AND ((not exists(r.hide_in_terminfo)) OR "
+                                                           "(not (r.hide_in_terminfo[0] = true))) "),
                                             WITH="CASE WHEN o IS NULL THEN [] "
                                                  "ELSE COLLECT ({ relation: %s, object: %s }) "
                                                  "END AS relationships " % (roll_min_edge_info("r"),
@@ -242,7 +242,8 @@ class QueryLibraryCore:
     def related_individuals(self): return (Clause(vars=["related_individuals"],
                                                   MATCH=Template(
                                                       "OPTIONAL MATCH "
-                                                      "(o:Individual)<-[r {type:'Related'}]-($pvar$labels)"),
+                                                      "(o:Individual)<-[r]-($pvar$labels) "
+                                                      "WHERE (r.type='Related' OR r:term_replaced_by) "),
                                                   WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
                                                        "({ relation: %s, object: %s }) "
                                                        "END AS related_individuals "
