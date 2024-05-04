@@ -232,7 +232,7 @@ class QueryLibraryCore:
     def relationships(self): return (Clause(vars=["relationships"],
                                             MATCH=Template("OPTIONAL MATCH "
                                                            "(o:Class)<-[r {}]-($pvar$labels) " 
-                                                           "WHERE (r.type='Related' OR r:term_replaced_by) AND ((not exists(r.hide_in_terminfo)) OR "
+                                                           "WHERE (r.type='Related') AND ((not exists(r.hide_in_terminfo)) OR "
                                                            "(not (r.hide_in_terminfo[0] = true))) "),
                                             WITH="CASE WHEN o IS NULL THEN [] "
                                                  "ELSE COLLECT ({ relation: %s, object: %s }) "
@@ -243,7 +243,17 @@ class QueryLibraryCore:
                                                   MATCH=Template(
                                                       "OPTIONAL MATCH "
                                                       "(o:Individual)<-[r]-($pvar$labels) "
-                                                      "WHERE (r.type='Related' OR r:term_replaced_by) "),
+                                                      "WHERE (r.type='Related') "),
+                                                  WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
+                                                       "({ relation: %s, object: %s }) "
+                                                       "END AS related_individuals "
+                                                       % (roll_min_edge_info("r"),
+                                                          roll_min_node_info("o"))))
+
+    def term_replaced_by(self): return (Clause(vars=["related_individuals"],
+                                                  MATCH=Template(
+                                                      "OPTIONAL MATCH "
+                                                      "(o)<-[r:term_replaced_by]-($pvar$labels) "),
                                                   WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
                                                        "({ relation: %s, object: %s }) "
                                                        "END AS related_individuals "
@@ -533,6 +543,7 @@ class QueryLibrary(QueryLibraryCore):
                                       self.dataSet_license(),
                                       self.parents(),
                                       self.relationships(),
+                                      self.term_replaced_by(),
                                       self.xrefs(),
                                       self.channel_image(),
                                       self.pub_syn(),
@@ -564,7 +575,7 @@ class QueryLibrary(QueryLibraryCore):
                              clauses=[self.term(),
                                       self.parents(),
                                       self.relationships(),
-                             #         self.related_individuals(),
+                                      self.term_replaced_by(),
                                       self.xrefs(),
                                       self.anatomy_channel_image(),
                                       self.pub_syn(),
