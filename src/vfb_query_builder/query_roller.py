@@ -649,6 +649,7 @@ class QueryLibrary(QueryLibraryCore):
                                       self.dataSet_license(),
                                       self.parents(),
                                       self.relationships(),
+                                      self.term_replaced_by(),
                                       self.xrefs(),
                                       self.related_individuals()
                                       ],
