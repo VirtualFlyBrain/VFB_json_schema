@@ -243,7 +243,7 @@ class QueryLibraryCore:
                                                   MATCH=Template(
                                                       "OPTIONAL MATCH "
                                                       "(o:Individual)<-[r]-($pvar$labels) "
-                                                      "WHERE (r.type='Related') "),
+                                                      "WHERE (r.type='Related') OR r:term_replaced_by "),
                                                   WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
                                                        "({ relation: %s, object: %s }) "
                                                        "END AS related_individuals "
@@ -649,7 +649,6 @@ class QueryLibrary(QueryLibraryCore):
                                       self.dataSet_license(),
                                       self.parents(),
                                       self.relationships(),
-                                      self.term_replaced_by(),
                                       self.xrefs(),
                                       self.related_individuals()
                                       ],
