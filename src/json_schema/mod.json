@@ -63,6 +63,14 @@
         "type": {
           "description": "Neo4J edge type",
           "type": "string"
+        },
+        "confidence_value": {
+          "description": "Confidence value (usually %)",
+          "type": "string"
+        },
+        "database_cross_reference": {
+          "description": "Neo4J edge reference (DB:accession)",
+          "type": "string"
         }
       }
     },
