@@ -128,7 +128,12 @@ def roll_min_edge_info(var):
     """Rolls core JSON (specifying minimal info about an edge.
     var: the variable name for the edge within this cypher clause."""
     return "{ label: %s.label, " \
-           "iri: %s.iri, type: type(%s) } " % (var, var, var)  # short_forms are not present in OLS-PDB
+           "iri: %s.iri, " \
+           "type: type(%s), " \
+           "database_cross_reference: coalesce(%s.database_cross_reference[0], ''), " \
+           "confidence_value: coalesce(toString(toFloat(%s.confidence_value[0]) * 100) + '%%', '') }" % (
+               var, var, var, var, var
+           ) # short_forms are not present in OLS-PDB
 
 def roll_pub_return(var):
     s = Template("{ core: $core, "
