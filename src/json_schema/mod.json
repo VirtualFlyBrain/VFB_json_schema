@@ -69,8 +69,11 @@
           "type": "string"
         },
         "database_cross_reference": {
-          "description": "Neo4J edge reference (DB:accession)",
-          "type": "string"
+          "description": "Neo4J edge reference list (['DB:accession'])",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
