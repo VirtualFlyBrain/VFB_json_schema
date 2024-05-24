@@ -131,7 +131,7 @@ def roll_min_edge_info(var):
            "iri: %s.iri, " \
            "type: type(%s), " \
            "database_cross_reference: coalesce(%s.database_cross_reference, []), " \
-           "confidence_value: coalesce(toString(toFloat(%s.confidence_value[0]) * 100) + '%%', '') }" % (
+           "confidence_value: coalesce(toString(%s.confidence_value[0]), '') }" % (
                var, var, var, var, var
            ) # short_forms are not present in OLS-PDB
 
