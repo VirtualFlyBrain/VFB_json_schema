@@ -667,7 +667,7 @@ class QueryLibrary(QueryLibraryCore):
             MATCH=Template("MATCH (ep:Class:Expression_pattern)<-[ar:overlaps|part_of]-(:Individual)"
                            "-[:INSTANCEOF]->(anat:Class) WHERE anat.short_form in $ssf "
                            "WITH DISTINCT collect(DISTINCT ar.pub) as pubs, anat, ep "
-                           "UNWIND pubs as p OPTIONAL MATCH (pub:pub { short_form: []+p[0]}) "),
+                           "UNWIND pubs as p OPTIONAL MATCH (pub:pub { short_form: p }) "),
             WITH="anat, ep, collect(%s) as pubs" % roll_pub_return("pub"),
             vars=['pubs'],
             node_vars=['anat', 'ep'],
@@ -678,7 +678,7 @@ class QueryLibrary(QueryLibraryCore):
             MATCH=Template("MATCH (ep:Expression_pattern:Class)<-[ar:overlaps|part_of]-(anoni:Individual)"
                            "-[:INSTANCEOF]->(anat:Class) WHERE ep.short_form in $ssf "
                            "WITH  anoni, anat, ar "
-                           "OPTIONAL MATCH (p:pub { short_form: ar.pub}) "),
+                           "OPTIONAL MATCH (p:pub { short_form: ar.pub[0]}) "),
             WITH="anat, anoni, %s AS pub" % roll_pub_return("p"),
             vars=['pub'],
             node_vars=['anoni', 'anat'],
