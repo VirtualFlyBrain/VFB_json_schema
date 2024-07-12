@@ -417,7 +417,13 @@ class QueryLibraryCore:
             "OPTIONAL MATCH (channel:Individual { short_form: pd.channel.short_form})"
             "-[:depicts]-(ai:Individual)-[:INSTANCEOF]->(c:Class) "),
         WITH="collect({ anatomical_type: %s ,"
-             " anatomical_individual: %s, folder: ([]+pd.irw.folder)[0], "
+             " anatomical_individual: %s, "
+             "folder: COALESCE(([]+pd.irw.folder)[0], ''), "
+             "image_nrrd: COALESCE(([]+pd.irw.nrrd)[0], ''), "
+             "image_thumbnail: COALESCE(([]+pd.irw.thumbnail)[0], ''), "
+             "image_swc: COALESCE(([]+pd.irw.swc)[0], ''), "
+             "image_obj: COALESCE(([]+pd.irw.obj)[0], ''), "
+             "image_wlz: COALESCE(([]+pd.irw.wlz)[0], ''), "
              "center: coalesce (pd.irw.center, []), "
              "index: coalesce(apoc.convert.toInteger(([]+pd.irw.index)[0]), []) + [] })"
              " AS template_domains" % (roll_min_node_info("c"),
