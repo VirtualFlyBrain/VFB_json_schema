@@ -233,7 +233,7 @@ class QueryLibraryCore:
                                                      "<-[r:SUBCLASSOF|INSTANCEOF]-($pvar$labels) "
                                                      "WITH o "
                                                      "OPTIONAL MATCH p=(o)<-[:SUBCLASSOF*]-(:Class) "
-                                                     "WITH o, MAX(length(r)) AS max_chain_length "
+                                                     "WITH o, MAX(length(p)) AS max_chain_length "
                                                      "ORDER BY max_chain_length ASC "),
                                       WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
                                            "(%s) END AS parents " % roll_min_node_info("o"))  # Draft
