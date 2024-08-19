@@ -2,3 +2,4 @@ jsonschema
 requests
 vfb_connect
 pysolr
+navis
