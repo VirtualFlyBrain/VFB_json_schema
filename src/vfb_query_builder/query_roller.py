@@ -235,7 +235,7 @@ class QueryLibraryCore:
                                                      "WITH *, MAX(length(p)) AS max_chain_length "
                                                      "ORDER BY max_chain_length ASC "),
                                       WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
-                                           "(%s) END AS parents " % roll_min_node_info("o"))  # Draft
+                                           "(DISTINCT %s) END AS parents " % roll_min_node_info("o"))  # Draft
 
     def relationships(self): return (Clause(vars=["relationships"],
                                             MATCH=Template("OPTIONAL MATCH "
