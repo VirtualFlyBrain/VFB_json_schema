@@ -232,7 +232,7 @@ class QueryLibraryCore:
                                       MATCH=Template("OPTIONAL MATCH (o:Class)"
                                                      "<-[r:SUBCLASSOF|INSTANCEOF]-($pvar$labels) "
                                                      "OPTIONAL MATCH p=(o)<-[:SUBCLASSOF*..5]-(:Class) "
-                                                     "WITH *, MAX(length(p)) AS max_chain_length "
+                                                     "WITH *, MAX(length(p)) AS max_chain_length, null as p "
                                                      "ORDER BY max_chain_length ASC "),
                                       WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
                                            "(DISTINCT %s) END AS parents " % roll_min_node_info("o"))  # Draft
