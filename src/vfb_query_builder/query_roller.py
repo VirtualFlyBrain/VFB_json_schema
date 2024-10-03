@@ -231,7 +231,7 @@ class QueryLibraryCore:
     def parents(self):  return Clause(vars=["parents"],
                                       MATCH=Template("OPTIONAL MATCH (o:Class)"
                                                      "<-[r:SUBCLASSOF|INSTANCEOF]-($pvar$labels) "
-                                                     "OPTIONAL MATCH p=(o)<-[:SUBCLASSOF*]-(:Class) "
+                                                     "OPTIONAL MATCH p=(o)<-[:SUBCLASSOF*..5]-(:Class) "
                                                      "WITH *, MAX(length(p)) AS max_chain_length "
                                                      "ORDER BY max_chain_length ASC "),
                                       WITH="CASE WHEN o IS NULL THEN [] ELSE COLLECT "
