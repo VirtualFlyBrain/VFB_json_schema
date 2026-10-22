@@ -387,15 +387,16 @@ class QueryLibraryCore:
                  "ELSE collect (%s) END AS parents" % roll_min_node_info('typ'),
             vars=["parents"])
 
-    def anatomy_channel_image(self, via="has_source|SUBCLASSOF|INSTANCEOF*"):
-        # via: relationship pattern from the queried node down to its images. Datasets only ever link to their
-        # images directly with has_source; the unbounded variable-length default is for classes. On a DataSet it
-        # enumerates paths and takes hours on large datasets (the limit applies only after the expansion).
+    def anatomy_channel_image(self, via="[:SUBCLASSOF*0..]-(klass:Class)<-[:INSTANCEOF]"):
+        # via: relationship pattern from the queried node down to its images, written as the part between
+        # "<-" and "-(i:Individual)". Classes: subclasses (zero or more) then INSTANCEOF to the individual. Datasets
+        # link to their images directly with has_source. The previous [:has_source|SUBCLASSOF|INSTANCEOF*] enumerated
+        # every mixed path before the limit applied and took hours on large classes and datasets.
 
         return Clause(
             MATCH=Template(
-                "CALL apoc.cypher.run('WITH $pvar OPTIONAL MATCH ($pvar$labels)<- "
-                "[:" + via + "]-(i:Individual)<-[:depicts]- "
+                "CALL apoc.cypher.run('WITH $pvar OPTIONAL MATCH ($pvar$labels)<- " +
+                via + "-(i:Individual)<-[:depicts]- "
                 "(channel:Individual)-[irw:in_register_with] "
                 "->(template:Individual)-[:depicts]-> "
                 "(template_anat:Individual) RETURN template, channel, template_anat, i, irw "
@@ -628,7 +629,7 @@ class QueryLibrary(QueryLibraryCore):
                                  roll_dataset_return_dict(
                                      'primary',
                                      typ='core')),
-                                 self.anatomy_channel_image(via='has_source'),
+                                 self.anatomy_channel_image(via='[:has_source]'),
                                  self.xrefs(),
                                  self.license(),
                                  self.pubs(),
@@ -772,7 +773,7 @@ class QueryLibrary(QueryLibraryCore):
                             pretty_print=pretty_print)
 
     def template_2_datasets_query(self, short_forms, *args, pretty_print=False, q_name='Get JSON for template_2_datasets query'):
-        aci = self.anatomy_channel_image(via='has_source')
+        aci = self.anatomy_channel_image(via='[:has_source]')
         aci.__setattr__('pvar', 'ds')
         # In the absence of extra tools available for Neo4j3.n
         # We can't set limits on numbers of images.
@@ -794,7 +795,7 @@ class QueryLibrary(QueryLibraryCore):
                             pretty_print=pretty_print)
 
     def all_datasets_query(self, *args, pretty_print=False, q_name='Get JSON for all_datasets query'):
-        aci = self.anatomy_channel_image(via='has_source')
+        aci = self.anatomy_channel_image(via='[:has_source]')
         aci.__setattr__('pvar', 'ds')
         # In the absence of extra tools available for Neo4j3.n
         # We can't set limits on numbers of images.
