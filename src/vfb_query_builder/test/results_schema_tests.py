@@ -63,7 +63,7 @@ class QueryRollerTest(unittest.TestCase):
                          query=query, single=False)
 
     def test_cluster_expression(self):
-        query = self.ql.cluster_expression_query(short_forms=['FBlc0003890', 'FBlc0003882'])
+        query = self.ql.cluster_expression_query(short_forms=['VFBseq_00000409', 'VFBseq_00000048'])
         print("Testing and printing first result in list only.")
         r = self.qw.test(t=self,
                          query=query, single=False)
