@@ -277,7 +277,7 @@ class QueryLibraryCore:
                            "has_post_synaptic_terminal_in]-($pvar) "
                            "WITH DISTINCT collect(properties(r)) + {} as props, target, $v "),
                        WITH="apoc.map.removeKeys(apoc.map.merge(props[0], props[1]),"
-                             "['iri', 'short_form', 'Related', 'label', 'type']) "
+                             "['iri', 'short_form', 'Related', 'label', 'type', 'edge_sig']) "
                              "as synapse_counts, %s as object, target  "
                              "" % roll_min_node_info("target")))  # o -> images, parent classes
 
